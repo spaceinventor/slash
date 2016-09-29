@@ -399,7 +399,7 @@ static void slash_command_usage(struct slash *slash, struct slash_command *comma
 
 	slash_command_fullname(command, fullname);
 
-	slash_printf(slash, "%s: %s %s\n", type, fullname, args);
+	slash_printf(slash, "%s: %s %s\r\n", type, fullname, args);
 }
 
 static void slash_command_description(struct slash *slash, struct slash_command *command)
@@ -415,7 +415,7 @@ static void slash_command_description(struct slash *slash, struct slash_command 
 		desclen = nl ? nl - help : (int) strlen(help);
 	}
 
-	slash_printf(slash, "%-15s %.*s\n", command->name, desclen, help);
+	slash_printf(slash, "%-15s %.*s\r\n", command->name, desclen, help);
 }
 
 static void slash_command_help(struct slash *slash, struct slash_command *command)
@@ -430,11 +430,11 @@ static void slash_command_help(struct slash *slash, struct slash_command *comman
 	slash_printf(slash, "%s", help);
 
 	if (help[strlen(help)-1] != '\n')
-		slash_printf(slash, "\n");
+		slash_printf(slash, "\r\n");
 
 	if (!slash_list_empty(&command->sub)) {
 		slash_printf(slash,
-			     "\nAvailable subcommands in \'%s\' group:\n",
+			     "\r\nAvailable subcommands in \'%s\' group:\r\n",
 			     command->name);
 		slash_list_for_each(cur, &command->sub, command)
 			slash_command_description(slash, cur);
@@ -449,12 +449,12 @@ int slash_execute(struct slash *slash, char *line)
 
 	command = slash_command_find(slash, line, strlen(line), &args);
 	if (!command) {
-		slash_printf(slash, "No such command: %s\n", line);
+		slash_printf(slash, "No such command: %s\r\n", line);
 		return -ENOENT;
 	}
 
 	if (!command->func) {
-		slash_printf(slash, "Available subcommands in \'%s\' group:\n",
+		slash_printf(slash, "Available subcommands in \'%s\' group:\r\n",
 			     command->name);
 		slash_list_for_each(cur, &command->sub, command)
 			slash_command_description(slash, cur);
@@ -463,7 +463,7 @@ int slash_execute(struct slash *slash, char *line)
 
 	/* Build args */
 	if (slash_build_args(args, argv, &argc) < 0) {
-		slash_printf(slash, "Mismatched quotes\n");
+		slash_printf(slash, "Mismatched quotes\r\n");
 		return -EINVAL;
 	}
 
@@ -528,7 +528,7 @@ static bool slash_complete_confirm(struct slash *slash, int matches)
 	} while (c != 'y' && c != 'n' && c != '\t' &&
 		(isprint((int)c) || isspace((int)c)));
 
-	slash_printf(slash, "\n");
+	slash_printf(slash, "\r\n");
 
 	return (c == 'y' || c == '\t');
 }
@@ -597,7 +597,7 @@ static void slash_complete(struct slash *slash)
 	/* Complete or list matches */
 	if (!matches) {
 		if (command) {
-			slash_printf(slash, "\n");
+			slash_printf(slash, "\r\n");
 			slash_command_usage(slash, command);
 		} else {
 			slash_bell(slash);
@@ -608,7 +608,7 @@ static void slash_complete(struct slash *slash)
 		slash_set_completion(slash, complete, prefix->name, prefixlen, false);
 		slash_bell(slash);
 	} else {
-		slash_printf(slash, "\n");
+		slash_printf(slash, "\r\n");
 		if (slash_complete_confirm(slash, matches))
 			slash_show_completions(slash, &completions);
 	}
@@ -1067,7 +1067,7 @@ char *slash_readline(struct slash *slash, const char *prompt)
 	}
 
 	slash_restore_term(slash);
-	slash_putchar(slash, '\n');
+	slash_printf(slash, "\r\n");
 	slash_history_add(slash, slash->buffer);
 
 	return ret;
@@ -1084,7 +1084,7 @@ static int slash_builtin_help(struct slash *slash)
 
 	/* If no arguments given, just list all top-level commands */
 	if (slash->argc < 2) {
-		slash_printf(slash, "Available commands:\n");
+		slash_printf(slash, "Available commands:\r\n");
 		slash_list_for_each(command, &slash->commands, command)
 			slash_command_description(slash, command);
 		return SLASH_SUCCESS;
@@ -1100,7 +1100,7 @@ static int slash_builtin_help(struct slash *slash)
 	}
 	command = slash_command_find(slash, find, strlen(find), &args);
 	if (!command) {
-		slash_printf(slash, "No such command: %s\n", find);
+		slash_printf(slash, "No such command: %s\r\n", find);
 		return SLASH_EINVAL;
 	}
 
@@ -1116,7 +1116,11 @@ static int slash_builtin_history(struct slash *slash)
 	char *p = slash->history_head;
 
 	while (p != slash->history_tail) {
-		slash_putchar(slash, *p ? *p : '\n');
+		if (*p) {
+			slash_putchar(slash, *p);
+		} else {
+			slash_printf(slash, "\r\n");
+		}
 		p = slash_history_increment(slash, p);
 	}
 
