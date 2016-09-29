@@ -764,6 +764,12 @@ static void slash_history_add(struct slash *slash, char *line)
 	slash->history_rewind_length = 0;
 	slash->history_cursor = slash->history_tail;
 
+	/* Check if last command was similar */
+	size_t srclen;
+	char *src = slash_history_search_back(slash, slash->history_cursor, &srclen);
+	if ((src) && (strlen(line) == srclen) && (strncmp(src, line, srclen) == 0))
+		return;
+
 	/* Push including trailing zero */
 	if (!slash_line_empty(line, strlen(line)))
 		slash_history_push(slash, line, strlen(line) + 1);
