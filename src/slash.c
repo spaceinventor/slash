@@ -369,7 +369,7 @@ static int slash_build_args(char *args, char **argv, int *argc)
 	return 0;
 }
 
-static void strprepend(char *dest, char *src)
+static void strprepend(char *dest, const char *src)
 {
 	int len = strlen(src);
 	memmove(dest + len, dest, strlen(dest) + 1);
@@ -412,7 +412,7 @@ static void slash_command_description(struct slash *slash, struct slash_command 
 	if (command->help != NULL) {
 		help = command->help;
 		nl = strchr(help, '\n');
-		desclen = nl ? nl - help : strlen(help);
+		desclen = nl ? nl - help : (int) strlen(help);
 	}
 
 	slash_printf(slash, "%-15s %.*s\n", command->name, desclen, help);
@@ -586,7 +586,7 @@ static void slash_complete(struct slash *slash)
 		matches++;
 
 		/* Find common prefix */
-		if (prefixlen == -1) {
+		if (prefixlen == (size_t) -1) {
 			prefix = cur;
 			prefixlen = strlen(prefix->name);
 		} else {
@@ -899,7 +899,7 @@ static void slash_delete(struct slash *slash)
 
 static void slash_clear_screen(struct slash *slash)
 {
-	char *esc = ESCAPE("H") ESCAPE("2J");
+	char *esc = (char *) ESCAPE("H") ESCAPE("2J");
 	slash_write(slash, esc, strlen(esc));
 }
 
@@ -1078,7 +1078,8 @@ static int slash_builtin_help(struct slash *slash)
 {
 	char *args;
 	char find[slash->line_size];
-	int i, available = sizeof(find);
+	int i;
+	size_t available = sizeof(find);
 	struct slash_command *command;
 
 	/* If no arguments given, just list all top-level commands */
@@ -1092,7 +1093,7 @@ static int slash_builtin_help(struct slash *slash)
 	find[0] = '\0';
 
 	for (i = 1; i < slash->argc; i++) {
-		if (strlen(slash->argv[i]) >= available)
+		if (strlen(slash->argv[i]) >= (size_t) available)
 			return SLASH_ENOSPC;
 		strcat(find, slash->argv[i]);
 		strcat(find, " ");
