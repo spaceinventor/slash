@@ -41,6 +41,7 @@
 /* Configuration */
 #define SLASH_ARG_MAX		16	/* Maximum number of arguments */
 #define SLASH_SHOW_MAX		10	/* Maximum number of commands to list */
+#define SLASH_NOEXIT		1	/* Do not provide the builtin 'exit' cmd */
 
 /* Terminal codes */
 #define ESC '\x1b'
@@ -1131,12 +1132,14 @@ static int slash_builtin_history(struct slash *slash)
 slash_command(history, slash_builtin_history, NULL,
 	      "Show previous commands");
 
+#if !SLASH_NOEXIT
 static int slash_builtin_exit(struct slash *slash)
 {
 	return SLASH_EXIT;
 }
 slash_command(exit, slash_builtin_exit, NULL,
 	      "Exit slash");
+#endif
 
 /* Core */
 int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_bad)
