@@ -99,7 +99,7 @@ static inline int slash_list_head(struct slash_list *list,
 }
 
 #define __slash_command(_ident, _group, _name, _func, _args, _help) 	\
-	char _ident ## _str[] = stringify(_name);			\
+	const char _ident ## _str[] = stringify(_name);			\
 	__attribute__((section("slash")))				\
 	__attribute__((used))						\
 	struct slash_command _ident = {					\
@@ -145,7 +145,7 @@ typedef int (*slash_func_t)(struct slash *slash);
 /* Command struct */
 struct slash_command {
 	/* Static data */
-	char *name;
+	const char *name;
 	const slash_func_t func;
 	const char *args;
 	const char *help;
