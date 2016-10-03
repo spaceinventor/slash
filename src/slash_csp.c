@@ -25,8 +25,9 @@
 #include <csp/csp.h>
 #include <csp/csp_cmp.h>
 #include <csp/csp_endian.h>
+#include <hex_dump.h>
 #include <slash/slash.h>
-
+#include "base16.h"
 
 static int slash_csp_info(struct slash *slash)
 {
@@ -167,7 +168,7 @@ static int slash_csp_cmp_ident(struct slash *slash)
 	struct csp_cmp_message message;
 
 	if (csp_cmp_ident(node, timeout, &message) != CSP_ERR_NONE) {
-		printf("No response\r\n");
+		printf("No response\n");
 		return SLASH_EINVAL;
 	}
 
@@ -199,11 +200,11 @@ static int slash_csp_cmp_route_set(struct slash *slash)
 	strncpy(message.route_set.interface, interface, CSP_CMP_ROUTE_IFACE_LEN);
 
 	if (csp_cmp_route_set(node, timeout, &message) != CSP_ERR_NONE) {
-		printf("No response\r\n");
+		printf("No response\n");
 		return SLASH_EINVAL;
 	}
 
-	printf("Set route ok\r\n");
+	printf("Set route ok\n");
 
 	return SLASH_SUCCESS;
 }
@@ -227,7 +228,7 @@ static int slash_csp_cmp_ifstat(struct slash *slash)
 	strncpy(message.if_stats.interface, slash->argv[2], CSP_CMP_ROUTE_IFACE_LEN);
 
 	if (csp_cmp_if_stats(node, timeout, &message) != CSP_ERR_NONE) {
-		printf("No response\r\n");
+		printf("No response\n");
 		return SLASH_EINVAL;
 	}
 
@@ -262,3 +263,67 @@ static int slash_csp_cmp_ifstat(struct slash *slash)
 
 slash_command(ifstat, slash_csp_cmp_ifstat, "<node> <interface> [timeout]", "Ident");
 
+static int slash_csp_cmp_peek(struct slash *slash)
+{
+	if ((slash->argc < 4) || (slash->argc > 5))
+		return SLASH_EUSAGE;
+
+	unsigned int node = atoi(slash->argv[1]);
+	unsigned int address;
+	sscanf(slash->argv[2], "%x", &address);
+	unsigned int len = atoi(slash->argv[3]);
+
+	unsigned int timeout = 1000;
+	if (slash->argc > 4)
+		timeout = atoi(slash->argv[4]);
+
+	struct csp_cmp_message message;
+
+	message.peek.addr = csp_hton32(address);
+	message.peek.len = len;
+
+	if (csp_cmp_peek(node, timeout, &message) != CSP_ERR_NONE) {
+		printf("No response\n");
+		return SLASH_EINVAL;
+	}
+
+	hex_dump("Peek", message.peek.data, message.peek.len);
+
+	return SLASH_SUCCESS;
+}
+
+slash_command(peek, slash_csp_cmp_peek, "<node> <address> <len> [timeout]", "Peek");
+
+static int slash_csp_cmp_poke(struct slash *slash)
+{
+	if ((slash->argc < 4) || (slash->argc > 5))
+		return SLASH_EUSAGE;
+
+	unsigned int node = atoi(slash->argv[1]);
+	unsigned int address;
+	sscanf(slash->argv[2], "%x", &address);
+	unsigned int timeout = 1000;
+	if (slash->argc > 4)
+		timeout = atoi(slash->argv[4]);
+
+	struct csp_cmp_message message;
+
+	message.poke.addr = csp_hton32(address);
+
+	int outlen = base16_decode(slash->argv[3], (uint8_t *) message.poke.data);
+
+	message.poke.len = outlen;
+
+	hex_dump("data", message.poke.data, outlen);
+
+	if (csp_cmp_poke(node, timeout, &message) != CSP_ERR_NONE) {
+		printf("No response\n");
+		return SLASH_EINVAL;
+	}
+
+	printf("Poke ok\n");
+
+	return SLASH_SUCCESS;
+}
+
+slash_command(poke, slash_csp_cmp_poke, "<node> <address> <data> [timeout]", "Poke");
