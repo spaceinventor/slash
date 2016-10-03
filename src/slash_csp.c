@@ -327,3 +327,41 @@ static int slash_csp_cmp_poke(struct slash *slash)
 }
 
 slash_command(poke, slash_csp_cmp_poke, "<node> <address> <data> [timeout]", "Poke");
+
+static int slash_csp_cmp_time(struct slash *slash)
+{
+	if ((slash->argc < 3) || (slash->argc > 4))
+		return SLASH_EUSAGE;
+
+	unsigned int node = atoi(slash->argv[1]);
+	int timestamp = atoi(slash->argv[2]);
+	unsigned int timeout = 1000;
+	if (slash->argc > 3)
+		timeout = atoi(slash->argv[3]);
+
+	struct csp_cmp_message message;
+
+	if (timestamp == -1) {
+		csp_timestamp_t localtime;
+		clock_get_time(&localtime);
+		message.clock.tv_sec = csp_hton32(localtime.tv_sec);
+		message.clock.tv_nsec = csp_hton32(localtime.tv_nsec);
+	} else {
+		message.clock.tv_sec = csp_hton32(timestamp);
+		message.clock.tv_nsec = csp_hton32(0);
+	}
+
+	if (csp_cmp_clock(node, timeout, &message) != CSP_ERR_NONE) {
+		printf("No response\n");
+		return SLASH_EINVAL;
+	}
+
+	message.clock.tv_sec = csp_ntoh32(message.clock.tv_sec);
+	message.clock.tv_nsec = csp_ntoh32(message.clock.tv_nsec);
+
+	printf("Remote time is %lu.%09lu\n", message.clock.tv_sec, message.clock.tv_nsec);
+
+	return SLASH_SUCCESS;
+}
+
+slash_command(time, slash_csp_cmp_time, "<node> <timestamp (0 GET, -1 SETLOCAL)> [timeout]", "Time");
