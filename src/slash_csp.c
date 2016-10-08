@@ -1,7 +1,6 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2016 Satlab ApS <satlab@satlab.com>
  * Copyright (c) 2016 Space Inventor ApS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -22,10 +21,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <csp/csp.h>
 #include <csp/csp_cmp.h>
 #include <csp/csp_endian.h>
-#include <hex_dump.h>
 #include <slash/slash.h>
 #include "base16.h"
 
@@ -287,8 +287,8 @@ static int slash_csp_cmp_peek(struct slash *slash)
 		return SLASH_EINVAL;
 	}
 
-	printf("Peek at address %p\n", (void *) address);
-	hex_dump(NULL, message.peek.data, message.peek.len);
+	printf("Peek at address %p\n", (void *) (intptr_t) address);
+	csp_hex_dump(NULL, message.peek.data, message.peek.len);
 
 	return SLASH_SUCCESS;
 }
@@ -315,8 +315,8 @@ static int slash_csp_cmp_poke(struct slash *slash)
 
 	message.poke.len = outlen;
 
-	printf("Poke at address %p\n", (void *) address);
-	hex_dump(NULL, message.poke.data, outlen);
+	printf("Poke at address %p\n", (void *) (intptr_t) address);
+	csp_hex_dump(NULL, message.poke.data, outlen);
 
 	if (csp_cmp_poke(node, timeout, &message) != CSP_ERR_NONE) {
 		printf("No response\n");
@@ -361,7 +361,7 @@ static int slash_csp_cmp_time(struct slash *slash)
 	message.clock.tv_sec = csp_ntoh32(message.clock.tv_sec);
 	message.clock.tv_nsec = csp_ntoh32(message.clock.tv_nsec);
 
-	printf("Remote time is %lu.%09lu\n", message.clock.tv_sec, message.clock.tv_nsec);
+	printf("Remote time is %"PRIu32".%09"PRIu32"\n", message.clock.tv_sec, message.clock.tv_nsec);
 
 	return SLASH_SUCCESS;
 }

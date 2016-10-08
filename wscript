@@ -14,6 +14,7 @@ def configure(ctx):
 def build(ctx):
     ctx.objects(
         target   = APPNAME,
-        source   = 'src/slash.c',
+        source   = ['src/slash.c', 'src/slash_csp.c', 'src/base16.c'],
         includes = 'include',
+        use = 'csp',
         export_includes = 'include')
