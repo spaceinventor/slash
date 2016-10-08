@@ -9,6 +9,7 @@ def options(ctx):
 
 def configure(ctx):
     ctx.check(header_name='termios.h', features='c cprogram', mandatory=False)
+    ctx.env.SLASH_ENABLED = True
 
 def build(ctx):
     ctx.objects(
