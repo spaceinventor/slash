@@ -34,6 +34,8 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include <csp/arch/csp_thread.h>
+
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
@@ -1131,6 +1133,44 @@ static int slash_builtin_exit(struct slash *slash)
 slash_command(exit, slash_builtin_exit, NULL,
 	      "Exit slash");
 #endif
+
+static int slash_builtin_watch(struct slash *slash)
+{
+	if (slash->argc < 3)
+		return SLASH_EUSAGE;
+
+	char * endptr = NULL;
+	unsigned int interval = strtoul(slash->argv[1], &endptr, 10);
+	if (*endptr != '\0')
+		return SLASH_EUSAGE;
+
+	printf("Executing \"%s\" each %u ms - press <enter> to stop\n", slash->argv[2], interval);
+
+	/* Take a compy of the cmd */
+	char cmd[slash->line_size];
+	strncpy(cmd, slash->argv[2], slash->line_size);
+
+	while(1) {
+
+		/* Make another copy, since slash_exec will modify this */
+		char cmd_exec[slash->line_size];
+		strncpy(cmd_exec, cmd, slash->line_size);
+
+		/* Execute command */
+		slash_execute(slash, cmd_exec);
+
+		/* Delay (press enter to exit) */
+		if (slash_getchar_nonblock(slash) != -EIO)
+			break;
+		csp_sleep_ms(interval);
+		if (slash_getchar_nonblock(slash) != -EIO)
+			break;
+
+	}
+
+	return SLASH_SUCCESS;
+}
+slash_command(watch, slash_builtin_watch, "<interval> <cmd>", "Loop command");
 
 /* Core */
 int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_bad)
