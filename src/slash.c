@@ -40,6 +40,10 @@
 #include <termios.h>
 #endif
 
+#ifdef SLASH_ASF
+#include <asf.h>
+#endif
+
 /* Configuration */
 #define SLASH_ARG_MAX		16	/* Maximum number of arguments */
 #define SLASH_SHOW_MAX		10	/* Maximum number of commands to list */
@@ -1160,10 +1164,18 @@ static int slash_builtin_watch(struct slash *slash)
 		slash_execute(slash, cmd_exec);
 
 		/* Delay (press enter to exit) */
+#if SLASH_ASF
+		if (stdio_is_byte_pending())
+#else
 		if (slash_getchar_nonblock(slash) != -EIO)
+#endif
 			break;
 		csp_sleep_ms(interval);
+#if SLASH_ASF
+		if (stdio_is_byte_pending())
+#else
 		if (slash_getchar_nonblock(slash) != -EIO)
+#endif
 			break;
 
 	}

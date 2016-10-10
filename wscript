@@ -16,6 +16,7 @@ def configure(ctx):
     if ctx.options.slash_asf:
         ctx.env.append_unique('FILES_SLASH', 'src/slash_asf.c')
         ctx.env.append_unique('USE_SLASH', 'asf')
+        ctx.env.append_unique('DEFINES_SLASH', 'SLASH_ASF=1')
         
     if ctx.options.slash_csp:
         ctx.env.append_unique('FILES_SLASH', 'src/base16.c')
@@ -28,4 +29,5 @@ def build(ctx):
         source   = ctx.env.FILES_SLASH,
         includes = 'include',
         use = ctx.env.USE_SLASH,
+        defines = ctx.env.DEFINES_SLASH,
         export_includes = 'include')
