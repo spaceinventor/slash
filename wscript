@@ -1,20 +1,31 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-APPNAME = 'slash'
-VERSION = '1.0'
-
 def options(ctx):
-    pass
+    gr = ctx.add_option_group('slash options')
+    gr.add_option('--slash-asf', action='store_true')
+    gr.add_option('--slash-csp', action='store_true')
 
 def configure(ctx):
     ctx.check(header_name='termios.h', features='c cprogram', mandatory=False)
     ctx.env.SLASH_ENABLED = True
+    
+    ctx.env.append_unique('FILES_SLASH', 'src/slash.c')
+    ctx.env.append_unique('USE_SLASH', 'csp')
+    
+    if ctx.options.slash_asf:
+        ctx.env.append_unique('FILES_SLASH', 'src/slash_asf.c')
+        ctx.env.append_unique('USE_SLASH', 'asf')
+        
+    if ctx.options.slash_csp:
+        ctx.env.append_unique('FILES_SLASH', 'src/base16.c')
+        ctx.env.append_unique('FILES_SLASH', 'src/slash_csp.c')
+        ctx.env.append_unique('USE_SLASH', 'csp')
 
 def build(ctx):
     ctx.objects(
-        target   = APPNAME,
-        source   = ['src/slash.c', 'src/slash_csp.c', 'src/base16.c'],
+        target   = 'slash',
+        source   = ctx.env.FILES_SLASH,
         includes = 'include',
-        use = 'csp',
+        use = ctx.env.USE_SLASH,
         export_includes = 'include')
