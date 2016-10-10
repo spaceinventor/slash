@@ -156,6 +156,11 @@ static int slash_getchar(struct slash *slash)
 {
 	unsigned char c;
 
+#if SLASH_ASF
+	while (!stdio_is_byte_pending())
+		vTaskDelay(1);
+#endif
+
 	if (slash_read(slash, &c, 1) < 1)
 		return -EIO;
 
