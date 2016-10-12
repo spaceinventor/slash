@@ -39,7 +39,7 @@ static int slash_csp_info(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, cspinfo, slash_csp_info, NULL, "Show CSP info");
+slash_command_sub(csp, info, slash_csp_info, NULL, "Show CSP info");
 
 static int slash_csp_ping(struct slash *slash)
 {
@@ -48,13 +48,13 @@ static int slash_csp_ping(struct slash *slash)
 
 	unsigned int node = atoi(slash->argv[1]);
 
-	unsigned int size = 1;
-	if (slash->argc >= 3)
-		size = atoi(slash->argv[2]);
-
 	unsigned int timeout = 1000;
+	if (slash->argc >= 3)
+		timeout = atoi(slash->argv[2]);
+
+	unsigned int size = 1;
 	if (slash->argc >= 4)
-		timeout = atoi(slash->argv[3]);
+		size = atoi(slash->argv[3]);
 
 	slash_printf(slash, "Ping node %u size %u timeout %u: ", node, size, timeout);
 
@@ -69,7 +69,7 @@ static int slash_csp_ping(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, ping, slash_csp_ping, "<node> [size] [timeout]", "Ping a system");
+slash_command(ping, slash_csp_ping, "<node> [timeout] [size]", "Ping a system");
 
 static int slash_csp_reboot(struct slash *slash)
 {
