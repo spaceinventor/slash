@@ -41,7 +41,8 @@
 #endif
 
 #ifdef SLASH_ASF
-#include <asf.h>
+#include <stdio_serial.h>
+#include <si_stdio.h>
 #endif
 
 /* Configuration */

@@ -22,7 +22,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <asf.h>
+#include <system.h>
 #include <slash/slash.h>
 
 static int slash_asf_reset(struct slash *slash)
