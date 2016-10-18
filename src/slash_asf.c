@@ -22,12 +22,18 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <parts.h>
+
+#if SAMC21
 #include <system.h>
+#endif
 #include <slash/slash.h>
 
 static int slash_asf_reset(struct slash *slash)
 {
+#if SAMC21
 	system_reset();
+#endif
 	return SLASH_SUCCESS;
 }
 
