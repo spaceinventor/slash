@@ -99,10 +99,11 @@ static inline int slash_list_head(struct slash_list *list,
 }
 
 #define __slash_command(_ident, _group, _name, _func, _args, _help) 	\
+	const char _ident ## _str[] = stringify(_name);			\
 	__attribute__((section("slash")))				\
 	__attribute__((used))						\
 	struct slash_command _ident = {					\
-		.name  = #_name,				\
+		.name  = _ident ## _str,				\
 		.group = _group,					\
 		.func  = _func,						\
 		.args  = _args,						\
