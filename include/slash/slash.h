@@ -98,13 +98,11 @@ static inline int slash_list_head(struct slash_list *list,
 	return list == cur;
 }
 
-#define __slash_command(_ident, _group, _name, _func, _args, _help) 	\
-	const char _ident ## _str[] = stringify(_name);			\
+#define __slash_command(_ident, _name, _func, _args, _help) 	\
 	__attribute__((section("slash")))				\
 	__attribute__((used))						\
 	struct slash_command _ident = {					\
-		.name  = _ident ## _str,				\
-		.group = _group,					\
+		.name  = _name,				\
 		.func  = _func,						\
 		.args  = _args,						\
 		.help  = _help,						\
@@ -112,21 +110,17 @@ static inline int slash_list_head(struct slash_list *list,
 
 #define slash_command(_name, _func, _args, _help)			\
 	__slash_command(slash_cmd_ ## _name,				\
-			NULL, 						\
-			_name, _func, _args, _help)
+			#_name, _func, _args, _help)
 
 #define slash_command_sub(_group, _name, _func, _args, _help)		\
-	__slash_command(slash_cmd_ ## _group ## _ ## _name,		\
-			&(slash_cmd_ ## _group),			\
-			_name, _func, _args, _help)
+	__slash_command(slash_cmd_##_group ## _ ## _name ,		\
+			#_group" "#_name, _func, _args, _help)
 
 #define slash_command_subsub(_group, _subgroup, _name, _func, _args, _help) \
 	__slash_command(slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
-			&(slash_cmd_ ## _group ## _ ## _subgroup), 	\
-			_name, _func, _args, _help)
+			#_group" "#_subgroup" "#_name, _func, _args, _help)
 
-#define slash_command_group(_name, _help)				\
-	slash_command(_name, NULL, NULL, _help)
+#define slash_command_group(_name, _help)
 
 #define slash_command_subgroup(_group, _name, _help)			\
 	slash_command_sub(_group, _name, NULL, NULL, _help)
@@ -149,16 +143,6 @@ struct slash_command {
 	const slash_func_t func;
 	const char *args;
 	const char *help;
-
-	/* Parent command */
-	struct slash_command *group;
-
-	/* Subcommand list */
-	struct slash_list sub;
-
-	/* List member structures */
-	struct slash_list command;
-	struct slash_list completion;
 };
 
 /* Slash context */

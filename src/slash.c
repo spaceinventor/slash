@@ -58,6 +58,19 @@
 #define ESCAPE(code) "\x1b[0" code
 #define ESCAPE_NUM(code) "\x1b[%u" code
 
+/* Created by GCC before and after slash ELF section */
+extern struct slash_command __start_slash;
+extern struct slash_command __stop_slash;
+
+/* Calculate command section size */
+static const struct slash_command slash_size_dummy[2];
+#define SLASH_COMMAND_SIZE ((intptr_t) &slash_size_dummy[1] - (intptr_t) &slash_size_dummy[0])
+
+#define slash_for_each_command(_c) \
+	for (_c = &__stop_slash-1; \
+	     _c >= &__start_slash; \
+	     _c = (struct slash_command *)(intptr_t)((char *)_c - SLASH_COMMAND_SIZE))
+
 /* Terminal handling */
 static size_t slash_escaped_strlen(const char *s)
 {
@@ -212,48 +225,6 @@ static bool slash_line_empty(char *line, size_t linelen)
 	return true;
 }
 
-/* Command handling */
-static int slash_command_compare(struct slash_command *c1,
-				 struct slash_command *c2)
-{
-	/* Compare names alphabetically */
-	return strcmp(c1->name, c2->name);
-}
-
-static int slash_command_init(struct slash_command *cmd)
-{
-	/* Initialize subcommand list */
-	slash_list_init(&cmd->sub);
-
-	return 0;
-}
-
-static int slash_command_register(struct slash *slash,
-				  struct slash_command *cmd,
-				  struct slash_command *super)
-{
-	struct slash_list *list;
-	struct slash_command *cur;
-
-	list = super ? &super->sub : &slash->commands;
-
-	slash_command_init(cmd);
-
-	/* Insert sorted by name */
-	slash_list_for_each(cur, list, command) {
-		if (slash_command_compare(cur, cmd) > 0) {
-			slash_list_insert_tail(&cur->command, &cmd->command);
-			break;
-		}
-	}
-
-	/* Insert as last member */
-	if (slash_list_head(list, &cur->command))
-		slash_list_insert_tail(list, &cmd->command);
-
-	return 0;
-}
-
 static char *slash_command_line_token(char *line, size_t *len, char **next)
 {
 	char *token;
@@ -282,36 +253,25 @@ static char *slash_command_line_token(char *line, size_t *len, char **next)
 static struct slash_command *
 slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 {
-	struct slash_list *start = &slash->commands;
-	struct slash_command *cur, *command = NULL;
-	char *next = line, *token;
-	size_t tokenlen, matchlen;
-	bool found;
+	struct slash_command *cmd;
+	slash_for_each_command(cmd) {
 
-	while (!slash_list_empty(start) &&
-	      (token = slash_command_line_token(next, &tokenlen, &next))) {
+		/* Skip commands that are longer than linelen */
+		if (linelen < strlen(cmd->name))
+			continue;
 
-		if (token >= line + linelen)
-			break;
+		/* Find an exact match */
+		if (strncmp(line, cmd->name, strlen(cmd->name)) == 0) {
 
-		found = false;
+			/* Calculate arguments position */
+			*args = line + strlen(cmd->name);
 
-		slash_list_for_each(cur, start, command) {
-			matchlen = slash_max(tokenlen, strlen(cur->name));
-			if (!strncmp(token, cur->name, matchlen)) {
-				command = cur;
-				*args = token;
-				found = true;
-			}
+			return cmd;
 		}
 
-		if (!found)
-			break;
-
-		start = &command->sub;
 	}
 
-	return command;
+	return NULL;
 }
 
 static int slash_build_args(char *args, char **argv, int *argc)
@@ -373,37 +333,11 @@ static int slash_build_args(char *args, char **argv, int *argc)
 	return 0;
 }
 
-static void strprepend(char *dest, const char *src)
-{
-	int len = strlen(src);
-	memmove(dest + len, dest, strlen(dest) + 1);
-	memcpy(dest, src, len);
-}
-
-static void slash_command_fullname(struct slash_command *command, char *name)
-{
-	name[0] = '\0';
-
-	while (command != NULL) {
-		/* Prepend command name to full name */
-		strprepend(name, command->name);
-		command = command->group;
-		if (command)
-			strprepend(name, " ");
-	};
-}
-
 static void slash_command_usage(struct slash *slash, struct slash_command *command)
 {
-	char fullname[slash->line_size];
 	const char *args = command->args ? command->args : "";
 	const char *type = command->func ? "usage" : "group";
-
-	fullname[0] = '\0';
-
-	slash_command_fullname(command, fullname);
-
-	slash_printf(slash, "%s: %s %s\n", type, fullname, args);
+	slash_printf(slash, "%s: %s %s\n", type, command->name, args);
 }
 
 static void slash_command_description(struct slash *slash, struct slash_command *command)
@@ -424,25 +358,10 @@ static void slash_command_description(struct slash *slash, struct slash_command 
 
 static void slash_command_help(struct slash *slash, struct slash_command *command)
 {
-	const char *help = "";
-	struct slash_command *cur;
-
-	if (command->help != NULL)
-		help = command->help;
-
 	slash_command_usage(slash, command);
-	slash_printf(slash, "%s", help);
 
-	if (help[strlen(help)-1] != '\n')
-		slash_printf(slash, "\n");
-
-	if (!slash_list_empty(&command->sub)) {
-		slash_printf(slash,
-			     "\nAvailable subcommands in \'%s\' group:\n",
-			     command->name);
-		slash_list_for_each(cur, &command->sub, command)
-			slash_command_description(slash, cur);
-	}
+	if (command->help)
+		slash_printf(slash, "%s", command->help);
 }
 
 int slash_execute(struct slash *slash, char *line)
@@ -458,10 +377,12 @@ int slash_execute(struct slash *slash, char *line)
 	}
 
 	if (!command->func) {
+#if 0
 		slash_printf(slash, "Available subcommands in \'%s\' group:\n",
 			     command->name);
 		slash_list_for_each(cur, &command->sub, command)
 			slash_command_description(slash, cur);
+#endif
 		return -EINVAL;
 	}
 
@@ -512,8 +433,10 @@ static void slash_show_completions(struct slash *slash, struct slash_list *compl
 {
 	struct slash_command *cur;
 
+#if 0
 	slash_list_for_each(cur, completions, completion)
 		slash_command_description(slash, cur);
+#endif
 }
 
 static bool slash_complete_confirm(struct slash *slash, int matches)
@@ -574,6 +497,7 @@ static void slash_complete(struct slash *slash)
 	complete = slash_last_word(slash->buffer, slash->cursor, &completelen);
 	commandlen = complete - slash->buffer;
 
+#if 0
 	/* Determine if we are completing sub command */
 	if (!slash_line_empty(slash->buffer, commandlen)) {
 		command = slash_command_find(slash, slash->buffer, commandlen, &args);
@@ -616,6 +540,7 @@ static void slash_complete(struct slash *slash)
 		if (slash_complete_confirm(slash, matches))
 			slash_show_completions(slash, &completions);
 	}
+#endif
 }
 
 /* History */
@@ -1094,9 +1019,10 @@ static int slash_builtin_help(struct slash *slash)
 
 	/* If no arguments given, just list all top-level commands */
 	if (slash->argc < 2) {
-		slash_printf(slash, "Available commands:\n");
-		slash_list_for_each(command, &slash->commands, command)
-			slash_command_description(slash, command);
+		struct slash_command *cmd;
+		slash_for_each_command(cmd) {
+			slash_command_description(slash, cmd);
+		}
 		return SLASH_SUCCESS;
 	}
 
@@ -1220,12 +1146,6 @@ int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_
 struct slash *slash_create(size_t line_size, size_t history_size)
 {
 	struct slash *slash;
-	struct slash_command *cmd;
-	unsigned long command_size;
-
-	/* Created by GCC before and after slash ELF section */
-	extern struct slash_command __start_slash;
-	extern struct slash_command __stop_slash;
 
 	/* Allocate slash context */
 	slash = calloc(sizeof(*slash), 1);
@@ -1235,10 +1155,6 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	/* Setup default values */
 	slash->fd_read = STDIN_FILENO;
 	slash->fd_write = STDOUT_FILENO;
-
-	/* Calculate command section size */
-	command_size = labs((long)&slash_cmd_help -
-			    (long)&slash_cmd_history);
 
 	/* Allocate zero-initialized line and history buffers */
 	slash->line_size = line_size;
@@ -1262,15 +1178,12 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
 
-#define slash_for_each_command(_c) \
-	for (_c = &__stop_slash-1; \
-	     _c >= &__start_slash; \
-	     _c = (struct slash_command *)(intptr_t)((char *)_c - command_size))
-
 	/* Register commands */
+	/*
 	slash_list_init(&slash->commands);
 	slash_for_each_command(cmd)
 		slash_command_register(slash, cmd, cmd->group);
+	*/
 
 	return slash;
 }
