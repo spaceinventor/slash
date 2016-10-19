@@ -385,17 +385,6 @@ void slash_bell(struct slash *slash)
 	slash_putchar(slash, '\a');
 }
 
-static void slash_set_completion(struct slash *slash,
-				 char *complete, const char *match,
-				 int len, bool space)
-{
-	strncpy(complete, match, len);
-	complete[len] = '\0';
-	if (space)
-		strncat(complete, " ", slash->line_size - 1);
-	slash->cursor = slash->length = strlen(slash->buffer);
-}
-
 int slash_prefix_length(const char *s1, const char *s2)
 {
 	int len = 0;
@@ -436,8 +425,9 @@ static void slash_complete(struct slash *slash)
 			if (matches == 1)
 				slash_printf(slash, "\n");
 
-			/* Print command */
-			slash_command_description(slash, cmd);
+			/* We only print all commands over 1 match here */
+			if (matches > 1)
+				slash_command_description(slash, cmd);
 
 		}
 
@@ -448,6 +438,7 @@ static void slash_complete(struct slash *slash)
 	} else if (matches == 1) {
 		if (slash->cursor <= prefixlen) {
 			strncpy(slash->buffer, prefix->name, prefixlen);
+			slash->buffer[prefixlen] = '\0';
 			strcat(slash->buffer, " ");
 			slash->cursor = slash->length = strlen(slash->buffer);
 		} else {
@@ -456,7 +447,11 @@ static void slash_complete(struct slash *slash)
 			}
 		}
 	} else if (slash->last_char != '\t') {
-		slash_set_completion(slash, slash->buffer, prefix->name, prefixlen, false);
+		/* Print the first match as well */
+		slash_command_description(slash, prefix);
+		strncpy(slash->buffer, prefix->name, prefixlen);
+		slash->buffer[prefixlen] = '\0';
+		slash->cursor = slash->length = strlen(slash->buffer);
 		slash_bell(slash);
 	}
 
