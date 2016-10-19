@@ -51,83 +51,54 @@
 	__typeof__ (b) _b = (b); \
 	_a > _b ? _a : _b; })
 
-/* List functions */
-struct slash_list {
-	struct slash_list *prev;
-	struct slash_list *next;
-};
+#define slash_min(a,b) \
+	({ __typeof__ (a) _a = (a); \
+	__typeof__ (b) _b = (b); \
+	_a < _b ? _a : _b; })
 
-#define SLASH_LIST_INIT(name) { &(name), &(name) }
-#define SLASH_LIST(name) struct slash_list name = SLASH_LIST_INIT(name)
-
-#define slash_list_for_each(pos, head, member)				\
-	for (pos = container_of((head)->next, typeof(*pos), member);	\
-	     &pos->member != (head);					\
-	     pos = container_of(pos->member.next, typeof(*pos), member))
-
-static inline void slash_list_init(struct slash_list *list)
-{
-	list->prev = list;
-	list->next = list;
-}
-
-static inline void slash_list_insert(struct slash_list *list, struct slash_list *elm)
-{
-	elm->prev = list;
-	elm->next = list->next;
-	list->next = elm;
-	elm->next->prev = elm;
-}
-
-static inline void slash_list_insert_tail(struct slash_list *list, struct slash_list *elm)
-{
-	elm->next = list;
-	elm->prev = list->prev;
-	list->prev = elm;
-	elm->prev->next = elm;
-}
-
-static inline int slash_list_empty(struct slash_list *list)
-{
-	return list->next == list;
-}
-
-static inline int slash_list_head(struct slash_list *list,
-				  struct slash_list *cur)
-{
-	return list == cur;
-}
-
-#define __slash_command(_ident, _name, _func, _args, _help) 	\
+#define __slash_command(_ident, _name, _func, _completer, _args, _help) 	\
 	__attribute__((section("slash")))				\
 	__attribute__((used))						\
 	struct slash_command _ident = {					\
 		.name  = _name,				\
 		.func  = _func,						\
+		.completer  = _completer,						\
 		.args  = _args,						\
 		.help  = _help,						\
 	};
 
 #define slash_command(_name, _func, _args, _help)			\
 	__slash_command(slash_cmd_ ## _name,				\
-			#_name, _func, _args, _help)
+			#_name, _func, NULL, _args, _help)
 
 #define slash_command_sub(_group, _name, _func, _args, _help)		\
 	__slash_command(slash_cmd_##_group ## _ ## _name ,		\
-			#_group" "#_name, _func, _args, _help)
+			#_group" "#_name, _func, NULL, _args, _help)
 
 #define slash_command_subsub(_group, _subgroup, _name, _func, _args, _help) \
 	__slash_command(slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
-			#_group" "#_subgroup" "#_name, _func, _args, _help)
+			#_group" "#_subgroup" "#_name, _func, NULL, _args, _help)
+
+#define slash_command_completer(_name, _func, _completer, _args, _help)			\
+	__slash_command(slash_cmd_ ## _name,				\
+			#_name, _func, _completer, _args, _help)
+
+#define slash_command_sub_completer(_group, _name, _func, _completer, _args, _help)		\
+	__slash_command(slash_cmd_##_group ## _ ## _name ,		\
+			#_group" "#_name, _func, _completer, _args, _help)
+
+#define slash_command_subsub_completer(_group, _subgroup, _name, _func, _completer, _args, _help) \
+	__slash_command(slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
+			#_group" "#_subgroup" "#_name, _func, _completer, _args, _help)
 
 #define slash_command_group(_name, _help)
 
-#define slash_command_subgroup(_group, _name, _help)			\
-	slash_command_sub(_group, _name, NULL, NULL, _help)
+#define slash_command_subgroup(_group, _name, _help)
 
 /* Command prototype */
 struct slash;
 typedef int (*slash_func_t)(struct slash *slash);
+typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 
 /* Command return values */
 #define SLASH_EXIT	( 1)
@@ -143,12 +114,11 @@ struct slash_command {
 	const slash_func_t func;
 	const char *args;
 	const char *help;
+	const slash_completer_func_t completer;
 };
 
 /* Slash context */
 struct slash {
-	/* Commands */
-	struct slash_list commands;
 
 	/* Terminal handling */
 #ifdef HAVE_TERMIOS_H
@@ -198,5 +168,9 @@ int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_
 int slash_getchar_nonblock(struct slash *slash);
 
 int slash_printf(struct slash *slash, const char *format, ...);
+
+int slash_prefix_length(const char *s1, const char *s2);
+
+void slash_bell(struct slash *slash);
 
 #endif /* _SLASH_H_ */

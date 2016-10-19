@@ -211,11 +211,6 @@ int slash_printf(struct slash *slash, const char *format, ...)
 	return ret;
 }
 
-static void slash_bell(struct slash *slash)
-{
-	slash_putchar(slash, '\a');
-}
-
 static bool slash_line_empty(char *line, size_t linelen)
 {
 	while (*line && linelen--)
@@ -223,31 +218,6 @@ static bool slash_line_empty(char *line, size_t linelen)
 			return false;
 
 	return true;
-}
-
-static char *slash_command_line_token(char *line, size_t *len, char **next)
-{
-	char *token;
-
-	/* Skip leading whitespace */
-	while (*line && *line == ' ')
-		line++;
-
-	token = line;
-	*len = 0;
-
-	while (*line && *line != ' ') {
-		(*len)++;
-		line++;
-	}
-
-	/* Skip trailing whitespace */
-	while (*line && *line == ' ')
-		line++;
-
-	*next = line;
-
-	return *len ? token : NULL;
 }
 
 static struct slash_command *
@@ -366,7 +336,7 @@ static void slash_command_help(struct slash *slash, struct slash_command *comman
 
 int slash_execute(struct slash *slash, char *line)
 {
-	struct slash_command *command, *cur;
+	struct slash_command *command;
 	char *args, *argv[SLASH_ARG_MAX];
 	int ret, argc = 0;
 
@@ -377,6 +347,7 @@ int slash_execute(struct slash *slash, char *line)
 	}
 
 	if (!command->func) {
+		// TODO: Help user here with autocomplete?
 #if 0
 		slash_printf(slash, "Available subcommands in \'%s\' group:\n",
 			     command->name);
@@ -409,68 +380,9 @@ int slash_execute(struct slash *slash, char *line)
 }
 
 /* Completion */
-static char *slash_last_word(char *line, size_t len, size_t *lastlen)
+void slash_bell(struct slash *slash)
 {
-	char *word;
-
-	word = &line[len];
-	*lastlen = 0;
-
-	while (word > line && *word != ' ') {
-		word--;
-		(*lastlen)++;
-	}
-
-	if (word != line) {
-		word++;
-		(*lastlen)--;
-	}
-
-	return word;
-}
-
-static void slash_show_completions(struct slash *slash, struct slash_list *completions)
-{
-	struct slash_command *cur;
-
-#if 0
-	slash_list_for_each(cur, completions, completion)
-		slash_command_description(slash, cur);
-#endif
-}
-
-static bool slash_complete_confirm(struct slash *slash, int matches)
-{
-	char c = 'y';
-
-	if (matches <= SLASH_SHOW_MAX)
-		return true;
-
-	slash_printf(slash, "Display all %d possibilities? (y or n) ", matches);
-	fflush(stdout);
-	do {
-		if (c != 'y')
-			slash_bell(slash);
-		c = slash_getchar(slash);
-	} while (c != 'y' && c != 'n' && c != '\t' &&
-		(isprint((int)c) || isspace((int)c)));
-
-	slash_printf(slash, "\n");
-
-	return (c == 'y' || c == '\t');
-}
-
-static int slash_prefix_length(const char *s1, const char *s2)
-{
-	int len = 0;
-
-	while (*s1 && *s2 && *s1 == *s2) {
-		len++;
-		s1++;
-		s2++;
-	}
-
-	return len;
+	slash_putchar(slash, '\a');
 }
 
 static void slash_set_completion(struct slash *slash,
@@ -484,63 +396,70 @@ static void slash_set_completion(struct slash *slash,
 	slash->cursor = slash->length = strlen(slash->buffer);
 }
 
+int slash_prefix_length(const char *s1, const char *s2)
+{
+	int len = 0;
+
+	while (*s1 && *s2 && *s1 == *s2) {
+		len++;
+		s1++;
+		s2++;
+	}
+
+	return len;
+}
+
 static void slash_complete(struct slash *slash)
 {
 	int matches = 0;
-	size_t completelen = 0, commandlen = 0, prefixlen = -1;
-	char *complete, *args;
-	struct slash_list *search = &slash->commands;
-	struct slash_command *cur, *command = NULL, *prefix = NULL;
-	SLASH_LIST(completions);
+	size_t prefixlen = -1;
+	struct slash_command *prefix = NULL;
+	struct slash_command *cmd;
+	size_t buffer_len = strlen(slash->buffer);
 
-	/* Find start of word to complete */
-	complete = slash_last_word(slash->buffer, slash->cursor, &completelen);
-	commandlen = complete - slash->buffer;
+	slash_for_each_command(cmd) {
 
-#if 0
-	/* Determine if we are completing sub command */
-	if (!slash_line_empty(slash->buffer, commandlen)) {
-		command = slash_command_find(slash, slash->buffer, commandlen, &args);
-		if (command)
-			search = &command->sub;
-	}
+		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), buffer_len)) == 0) {
 
-	/* Search list for matches */
-	slash_list_for_each(cur, search, command) {
-		if (strncmp(cur->name, complete, completelen) != 0)
-			continue;
+			/* Count matches */
+			matches++;
 
-		slash_list_insert_tail(&completions, &cur->completion);
-		matches++;
+			/* Find common prefix */
+			if (prefixlen == (size_t) -1) {
+				prefix = cmd;
+				prefixlen = strlen(prefix->name);
+			} else {
+				prefixlen = slash_prefix_length(prefix->name, cmd->name);
+			}
 
-		/* Find common prefix */
-		if (prefixlen == (size_t) -1) {
-			prefix = cur;
-			prefixlen = strlen(prefix->name);
-		} else {
-			prefixlen = slash_prefix_length(prefix->name, cur->name);
+			/* Print newline on first match */
+			if (matches == 1)
+				slash_printf(slash, "\n");
+
+			/* Print command */
+			slash_command_description(slash, cmd);
+
 		}
+
 	}
 
-	/* Complete or list matches */
 	if (!matches) {
-		if (command) {
-			slash_printf(slash, "\n");
-			slash_command_usage(slash, command);
-		} else {
-			slash_bell(slash);
-		}
-	} else if (matches == 1) {
-		slash_set_completion(slash, complete, prefix->name, prefixlen, true);
-	} else if (slash->last_char != '\t') {
-		slash_set_completion(slash, complete, prefix->name, prefixlen, false);
 		slash_bell(slash);
-	} else {
-		slash_printf(slash, "\n");
-		if (slash_complete_confirm(slash, matches))
-			slash_show_completions(slash, &completions);
+	} else if (matches == 1) {
+		if (slash->cursor <= prefixlen) {
+			strncpy(slash->buffer, prefix->name, prefixlen);
+			strcat(slash->buffer, " ");
+			slash->cursor = slash->length = strlen(slash->buffer);
+		} else {
+			if (prefix->completer) {
+				prefix->completer(slash, slash->buffer + prefixlen + 1);
+			}
+		}
+	} else if (slash->last_char != '\t') {
+		slash_set_completion(slash, slash->buffer, prefix->name, prefixlen, false);
+		slash_bell(slash);
 	}
-#endif
+
 }
 
 /* History */
