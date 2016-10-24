@@ -58,6 +58,7 @@
 
 #define __slash_command(_ident, _name, _func, _completer, _args, _help) 	\
 	__attribute__((section("slash")))				\
+	__attribute__((aligned(1))) \
 	__attribute__((used))						\
 	struct slash_command _ident = {					\
 		.name  = _name,				\
@@ -108,7 +109,7 @@ typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 #define SLASH_ENOSPC	(-3)
 
 /* Command struct */
-struct slash_command {
+struct __attribute__((aligned(1))) slash_command {
 	/* Static data */
 	const char *name;
 	const slash_func_t func;

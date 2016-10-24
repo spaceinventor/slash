@@ -63,7 +63,7 @@ extern struct slash_command __start_slash;
 extern struct slash_command __stop_slash;
 
 /* Calculate command section size */
-static const struct slash_command slash_size_dummy[2];
+static __attribute__((aligned(1))) const struct slash_command slash_size_dummy[2];
 #define SLASH_COMMAND_SIZE ((intptr_t) &slash_size_dummy[1] - (intptr_t) &slash_size_dummy[0])
 
 #define slash_for_each_command(_c) \
