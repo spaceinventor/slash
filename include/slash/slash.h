@@ -65,7 +65,6 @@
 		.func  = _func,						\
 		.completer  = _completer,						\
 		.args  = _args,						\
-		.help  = _help,						\
 	};
 
 #define slash_command(_name, _func, _args, _help)			\
@@ -114,7 +113,6 @@ struct __attribute__((aligned(1))) slash_command {
 	const char *name;
 	const slash_func_t func;
 	const char *args;
-	const char *help;
 	const slash_completer_func_t completer;
 };
 

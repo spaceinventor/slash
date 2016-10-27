@@ -312,26 +312,7 @@ static void slash_command_usage(struct slash *slash, struct slash_command *comma
 
 static void slash_command_description(struct slash *slash, struct slash_command *command)
 {
-	char *nl;
-	const char *help = "";
-	int desclen = 0;
-
-	/* Extract first line from help as description */
-	if (command->help != NULL) {
-		help = command->help;
-		nl = strchr(help, '\n');
-		desclen = nl ? nl - help : (int) strlen(help);
-	}
-
-	slash_printf(slash, "%-15s %.*s\n", command->name, desclen, help);
-}
-
-static void slash_command_help(struct slash *slash, struct slash_command *command)
-{
-	slash_command_usage(slash, command);
-
-	if (command->help)
-		slash_printf(slash, "%s", command->help);
+	slash_printf(slash, "%-15s\n", command->name);
 }
 
 int slash_execute(struct slash *slash, char *line)
@@ -954,7 +935,7 @@ static int slash_builtin_help(struct slash *slash)
 		return SLASH_EINVAL;
 	}
 
-	slash_command_help(slash, command);
+	slash_command_usage(slash, command);
 
 	return SLASH_SUCCESS;
 }
