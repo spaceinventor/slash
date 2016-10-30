@@ -27,12 +27,18 @@
 #if SAMC21
 #include <system.h>
 #endif
+#if SAME70
+#include <rstc.h>
+#endif
 #include <slash/slash.h>
 
 static int slash_asf_reset(struct slash *slash)
 {
 #if SAMC21
 	system_reset();
+#endif
+#if SAME70
+	rstc_start_software_reset(RSTC);
 #endif
 	return SLASH_SUCCESS;
 }
