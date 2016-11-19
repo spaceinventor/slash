@@ -36,6 +36,8 @@
 
 #include <csp/arch/csp_thread.h>
 
+#include <libslash.h>
+
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
