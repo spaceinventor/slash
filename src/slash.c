@@ -172,7 +172,7 @@ static int slash_getchar(struct slash *slash)
 {
 	unsigned char c;
 
-#if SLASH_ASF
+#if defined(SLASH_ASF)
 	while (!stdio_is_byte_pending())
 		vTaskDelay(1);
 #endif
@@ -993,14 +993,14 @@ static int slash_builtin_watch(struct slash *slash)
 		slash_execute(slash, cmd_exec);
 
 		/* Delay (press enter to exit) */
-#if SLASH_ASF
+#if defined(SLASH_ASF)
 		if (stdio_is_byte_pending())
 #else
 		if (slash_getchar_nonblock(slash) != -EIO)
 #endif
 			break;
 		csp_sleep_ms(interval);
-#if SLASH_ASF
+#if defined(SLASH_ASF)
 		if (stdio_is_byte_pending())
 #else
 		if (slash_getchar_nonblock(slash) != -EIO)
