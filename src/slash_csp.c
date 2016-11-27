@@ -371,3 +371,22 @@ static int slash_csp_cmp_time(struct slash *slash)
 }
 
 slash_command_sub(csp, time, slash_csp_cmp_time, "<node> <timestamp (0 GET, -1 SETLOCAL)> [timeout]", "Time");
+
+static int slash_csp_rdpopt(struct slash *slash)
+{
+	if (slash->argc < 6)
+		return SLASH_EUSAGE;
+
+	unsigned int window = atoi(slash->argv[1]);
+	unsigned int conn_timeout = atoi(slash->argv[2]);
+	unsigned int packet_timeout = atoi(slash->argv[3]);
+	unsigned int ack_timeout = atoi(slash->argv[4]);
+	unsigned int ack_count = atoi(slash->argv[5]);
+
+	printf("Setting rdp options: %u %u %u %u %u\n", window, conn_timeout, packet_timeout, ack_timeout, ack_count);
+	csp_rdp_set_opt(window, conn_timeout, packet_timeout, 1, ack_timeout, ack_count);
+
+	return SLASH_SUCCESS;
+}
+
+slash_command_sub(csp, rdpopt, slash_csp_rdpopt, "<window> <conn_to> <packet_to> <ack_to> <ack_count>", NULL);
