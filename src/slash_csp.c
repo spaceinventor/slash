@@ -194,7 +194,7 @@ static int slash_csp_cmp_route_set(struct slash *slash)
 	char * interface = slash->argv[3];
 	unsigned int next_hop_mac = atoi(slash->argv[4]);
 	unsigned int timeout = 1000;
-	if (slash->argc >= 5)
+	if (slash->argc >= 6)
 		timeout = atoi(slash->argv[5]);
 
 	struct csp_cmp_message message;
