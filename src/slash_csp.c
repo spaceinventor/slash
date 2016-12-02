@@ -347,9 +347,10 @@ static int slash_csp_cmp_time(struct slash *slash)
 
 	struct csp_cmp_message message;
 
+	csp_timestamp_t localtime;
+	clock_get_time(&localtime);
+
 	if (timestamp == -1) {
-		csp_timestamp_t localtime;
-		clock_get_time(&localtime);
 		message.clock.tv_sec = csp_hton32(localtime.tv_sec);
 		message.clock.tv_nsec = csp_hton32(localtime.tv_nsec);
 	} else {
@@ -365,7 +366,10 @@ static int slash_csp_cmp_time(struct slash *slash)
 	message.clock.tv_sec = csp_ntoh32(message.clock.tv_sec);
 	message.clock.tv_nsec = csp_ntoh32(message.clock.tv_nsec);
 
-	printf("Remote time is %"PRIu32".%09"PRIu32"\n", message.clock.tv_sec, message.clock.tv_nsec);
+	int64_t remote_time_ns = message.clock.tv_sec * 1E9 + message.clock.tv_nsec;
+	int64_t local_time_ns = localtime.tv_sec * 1E9 + localtime.tv_nsec;
+
+	printf("Remote time is %"PRIu32".%09"PRIu32" (diff %ld ms)\n", message.clock.tv_sec, message.clock.tv_nsec, (int32_t) (remote_time_ns - local_time_ns) / 1000000);
 
 	return SLASH_SUCCESS;
 }
