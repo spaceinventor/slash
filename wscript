@@ -3,7 +3,7 @@
 
 def options(ctx):
     gr = ctx.add_option_group('slash options')
-    gr.add_option('--slash-enabled', action='store_true')
+    gr.add_option('--slash-enabled', action='store', default=True)
     gr.add_option('--slash-asf', action='store_true')
     gr.add_option('--slash-csp', action='store_true')
 
