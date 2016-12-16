@@ -401,7 +401,9 @@ static void slash_complete(struct slash *slash)
 				prefix = cmd;
 				prefixlen = strlen(prefix->name);
 			} else {
-				prefixlen = slash_prefix_length(prefix->name, cmd->name);
+				int new_prefixlen = slash_prefix_length(prefix->name, cmd->name);
+				if (new_prefixlen < prefixlen)
+					prefixlen = new_prefixlen;
 			}
 
 			/* Print newline on first match */
