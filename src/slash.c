@@ -226,27 +226,34 @@ static struct slash_command *
 slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 {
 	struct slash_command *cmd;
+
+	/* Maximum length match */
+	size_t max_matchlen = 0;
+	struct slash_command *max_match_cmd = NULL;
+
 	slash_for_each_command(cmd) {
 
 		/* Skip commands that are longer than linelen */
 		if (linelen < strlen(cmd->name))
 			continue;
 
-		/* Calculate search length */
-		int cmplen = slash_max(strlen(cmd->name), linelen);
-
 		/* Find an exact match */
-		if (strncmp(line, cmd->name, cmplen) == 0) {
+		if (strncmp(line, cmd->name, strlen(cmd->name)) == 0) {
 
-			/* Calculate arguments position */
-			*args = line + strlen(cmd->name);
+			/* Update the max-length match */
+			if (strlen(cmd->name) > max_matchlen) {
+				max_match_cmd = cmd;
 
-			return cmd;
+				/* Calculate arguments position */
+				*args = line + strlen(cmd->name);
+
+			}
+
 		}
 
 	}
 
-	return NULL;
+	return max_match_cmd;
 }
 
 static int slash_build_args(char *args, char **argv, int *argc)
