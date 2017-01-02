@@ -232,8 +232,11 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 		if (linelen < strlen(cmd->name))
 			continue;
 
+		/* Calculate search length */
+		int cmplen = slash_max(strlen(cmd->name), linelen);
+
 		/* Find an exact match */
-		if (strncmp(line, cmd->name, strlen(cmd->name)) == 0) {
+		if (strncmp(line, cmd->name, cmplen) == 0) {
 
 			/* Calculate arguments position */
 			*args = line + strlen(cmd->name);
