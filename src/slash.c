@@ -243,6 +243,7 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 			/* Update the max-length match */
 			if (strlen(cmd->name) > max_matchlen) {
 				max_match_cmd = cmd;
+				max_matchlen = strlen(cmd->name);
 
 				/* Calculate arguments position */
 				*args = line + strlen(cmd->name);
