@@ -291,8 +291,8 @@ static int slash_csp_cmp_peek(struct slash *slash)
 		return SLASH_EINVAL;
 	}
 
-	printf("Peek at address %p\n", (void *) (intptr_t) address);
-	csp_hex_dump(NULL, message.peek.data, message.peek.len);
+	printf("Peek at address %p len %u\n", (void *) (intptr_t) address, len);
+	csp_hex_dump(NULL, message.peek.data, len);
 
 	return SLASH_SUCCESS;
 }
