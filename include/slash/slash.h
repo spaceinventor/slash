@@ -62,7 +62,7 @@
 	__attribute__((section("slash")))				\
 	__attribute__((aligned(1))) \
 	__attribute__((used))						\
-	struct slash_command _ident = {					\
+	const struct slash_command _ident = {					\
 		.name  = _name,				\
 		.func  = _func,						\
 		.completer  = _completer,						\
