@@ -41,7 +41,7 @@ static int slash_csp_info(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, info, slash_csp_info, NULL, "Show CSP info");
+slash_command(info, slash_csp_info, NULL, "Show CSP info");
 
 static int slash_csp_ping(struct slash *slash)
 {
@@ -84,7 +84,7 @@ static int slash_csp_reboot(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, reboot, slash_csp_reboot, "<node>", "Reboot a node");
+slash_command(reboot, slash_csp_reboot, "<node>", "Reboot a node");
 
 static int slash_csp_ps(struct slash *slash)
 {
@@ -102,7 +102,7 @@ static int slash_csp_ps(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, ps, slash_csp_ps, "<node> [timeout]", "Process list");
+slash_command(ps, slash_csp_ps, "<node> [timeout]", "Process list");
 
 static int slash_csp_memfree(struct slash *slash)
 {
@@ -120,7 +120,7 @@ static int slash_csp_memfree(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, memfree, slash_csp_memfree, "<node> [timeout]", "Memfree");
+slash_command(memfree, slash_csp_memfree, "<node> [timeout]", "Memfree");
 
 static int slash_csp_buffree(struct slash *slash)
 {
@@ -138,7 +138,7 @@ static int slash_csp_buffree(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, buffree, slash_csp_buffree, "<node> [timeout]", "Memfree");
+slash_command(buffree, slash_csp_buffree, "<node> [timeout]", "Memfree");
 
 static int slash_csp_uptime(struct slash *slash)
 {
@@ -156,7 +156,7 @@ static int slash_csp_uptime(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, uptime, slash_csp_uptime, "<node> [timeout]", "Memfree");
+slash_command(uptime, slash_csp_uptime, "<node> [timeout]", "Memfree");
 
 static int slash_csp_cmp_ident(struct slash *slash)
 {
@@ -181,7 +181,7 @@ static int slash_csp_cmp_ident(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, ident, slash_csp_cmp_ident, "<node> [timeout]", "Ident");
+slash_command(ident, slash_csp_cmp_ident, "<node> [timeout]", "Ident");
 
 
 static int slash_csp_cmp_route_set(struct slash *slash)
@@ -213,7 +213,7 @@ static int slash_csp_cmp_route_set(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, route_set, slash_csp_cmp_route_set, "<node> <dest_node> <interface> <mac> [timeout]", "Route set");
+slash_command(route_set, slash_csp_cmp_route_set, "<node> <dest_node> <interface> <mac> [timeout]", "Route set");
 
 
 static int slash_csp_cmp_ifstat(struct slash *slash)
@@ -265,7 +265,7 @@ static int slash_csp_cmp_ifstat(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, ifstat, slash_csp_cmp_ifstat, "<node> <interface> [timeout]", "Ident");
+slash_command(ifstat, slash_csp_cmp_ifstat, "<node> <interface> [timeout]", "Ident");
 
 static int slash_csp_cmp_peek(struct slash *slash)
 {
@@ -297,7 +297,7 @@ static int slash_csp_cmp_peek(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, peek, slash_csp_cmp_peek, "<node> <address> <len> [timeout]", "Peek");
+slash_command(peek, slash_csp_cmp_peek, "<node> <address> <len> [timeout]", "Peek");
 
 static int slash_csp_cmp_poke(struct slash *slash)
 {
@@ -332,7 +332,7 @@ static int slash_csp_cmp_poke(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, poke, slash_csp_cmp_poke, "<node> <address> <data> [timeout]", "Poke");
+slash_command(poke, slash_csp_cmp_poke, "<node> <address> <data> [timeout]", "Poke");
 
 static int slash_csp_cmp_time(struct slash *slash)
 {
@@ -374,7 +374,7 @@ static int slash_csp_cmp_time(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, time, slash_csp_cmp_time, "<node> <timestamp (0 GET, -1 SETLOCAL)> [timeout]", "Time");
+slash_command(time, slash_csp_cmp_time, "<node> <timestamp (0 GET, -1 SETLOCAL)> [timeout]", "Time");
 
 static int slash_csp_rdpopt(struct slash *slash)
 {
@@ -393,4 +393,4 @@ static int slash_csp_rdpopt(struct slash *slash)
 	return SLASH_SUCCESS;
 }
 
-slash_command_sub(csp, rdpopt, slash_csp_rdpopt, "<window> <conn_to> <packet_to> <ack_to> <ack_count>", NULL);
+slash_command(rdpopt, slash_csp_rdpopt, "<window> <conn_to> <packet_to> <ack_to> <ack_count>", NULL);
