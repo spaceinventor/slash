@@ -108,6 +108,7 @@ typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 #define SLASH_EUSAGE	(-1)
 #define SLASH_EINVAL	(-2)
 #define SLASH_ENOSPC	(-3)
+#define SLASH_ENOMEM	(-4)
 
 /* Command struct */
 struct __attribute__((aligned(1))) slash_command {
