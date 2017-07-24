@@ -27,6 +27,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include <slash_config.h>
+
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
