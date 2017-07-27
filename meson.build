@@ -2,12 +2,15 @@ project('slash', 'c')
 
 slash_sources = files([
 	'src/slash.c',
-	'src/slash_csp.c',
 	'src/base16.c',
 	])
 
 slash_deps = []
-slash_deps += dependency('libcsp', fallback : ['csp', 'libcsp_dep'])
+csp_dep = dependency('libcsp', fallback : ['csp', 'libcsp_dep'], required: false)
+if csp_dep.found()
+	slash_deps += csp_dep
+	slash_sources += 'src/slash_csp.c'
+endif
 
 conf = configuration_data()
 if meson.get_compiler('c').has_header('termios.h')

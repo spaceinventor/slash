@@ -34,8 +34,6 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <csp/arch/csp_thread.h>
-
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
@@ -1010,7 +1008,8 @@ static int slash_builtin_watch(struct slash *slash)
 		if (slash_getchar_nonblock(slash) != -EIO)
 #endif
 			break;
-		csp_sleep_ms(interval);
+// TODO: Implement usleep in freertos csp/arch
+		usleep(interval);
 #if defined(SLASH_ASF)
 		if (stdio_is_byte_pending())
 #else
