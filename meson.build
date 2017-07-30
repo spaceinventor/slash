@@ -6,7 +6,7 @@ slash_sources = files([
 	])
 
 slash_deps = []
-csp_dep = dependency('libcsp', fallback : ['csp', 'libcsp_dep'], required: false)
+csp_dep = dependency('libcsp', fallback : ['csp', 'csp_dep'], required: false)
 if csp_dep.found()
 	slash_deps += csp_dep
 	slash_sources += 'src/slash_csp.c'
