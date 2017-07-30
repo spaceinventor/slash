@@ -13,7 +13,7 @@ if csp_dep.found()
 endif
 
 conf = configuration_data()
-if meson.get_compiler('c').has_header('termios.h')
+if meson.get_compiler('c').has_header('sys/termios.h')
 	conf.set('HAVE_TERMIOS_H', true)
 endif
 

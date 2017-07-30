@@ -1009,7 +1009,7 @@ static int slash_builtin_watch(struct slash *slash)
 #endif
 			break;
 // TODO: Implement usleep in freertos csp/arch
-		usleep(interval);
+		//usleep(interval);
 #if defined(SLASH_ASF)
 		if (stdio_is_byte_pending())
 #else
