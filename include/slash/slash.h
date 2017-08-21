@@ -185,4 +185,8 @@ void slash_clear_screen(struct slash *slash);
 
 void slash_require_activation(struct slash *slash, bool activate);
 
+void slash_bell(struct slash *slash);
+
+int slash_prefix_length(const char *s1, const char *s2);
+
 #endif /* _SLASH_H_ */
