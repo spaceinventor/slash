@@ -25,7 +25,6 @@ slash = static_library('slash',
 	slash_sources,
 	include_directories : slash_inc,
 	dependencies : slash_deps,
-	install: true
 	)
 	
 slash_dep = declare_dependency(
