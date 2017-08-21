@@ -9,7 +9,7 @@ if meson.get_compiler('c').has_header('sys/termios.h')
 	conf.set('SLASH_HAVE_TERMIOS_H', true)
 endif
 
-if meson.get_compiler('c').has_header('sys/select.h')
+if meson.get_compiler('c').has_header('sys/select.h') and host_machine.system() == 'linux'
 	conf.set('SLASH_HAVE_SELECT', true)
 endif
 
