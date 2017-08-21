@@ -29,24 +29,23 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 
-#ifdef HAVE_TERMIOS_H
+#ifdef SLASH_HAVE_TERMIOS_H
 #include <termios.h>
 #endif
 
-#ifdef SLASH_ASF
-#include <stdio_serial.h>
-#include <si_stdio.h>
+#ifdef SLASH_HAVE_SELECT
+#include <sys/select.h>
 #endif
 
 /* Configuration */
 #define SLASH_ARG_MAX		16	/* Maximum number of arguments */
-#define SLASH_SHOW_MAX		10	/* Maximum number of commands to list */
-#define SLASH_NOEXIT		1	/* Do not provide the builtin 'exit' cmd */
+#define SLASH_SHOW_MAX		25	/* Maximum number of commands to list */
 
 /* Terminal codes */
 #define ESC '\x1b'
@@ -68,6 +67,57 @@ static __attribute__((aligned(1))) const struct slash_command slash_size_dummy[2
 	for (_c = &__stop_slash-1; \
 	     _c >= &__start_slash; \
 	     _c = (struct slash_command *)(intptr_t)((char *)_c - SLASH_COMMAND_SIZE))
+
+/* Command-line option parsing */
+int slash_getopt(struct slash *slash, const char *opts)
+{
+	/* From "public domain AT&T getopt source" newsgroup posting */
+	int c;
+	char *cp;
+
+	if (slash->sp == 1) {
+		if (slash->optind >= slash->argc ||
+		    slash->argv[slash->optind][0] != '-' ||
+		    slash->argv[slash->optind][1] == '\0') {
+			return EOF;
+		} else if (!strcmp(slash->argv[slash->optind], "--")) {
+			slash->optind++;
+			return EOF;
+		}
+	}
+
+	slash->optopt = c = slash->argv[slash->optind][slash->sp];
+
+	if (c == ':' || (cp = strchr(opts, c)) == NULL) {
+		slash_printf(slash, "Unknown option -%c\n", c);
+		if (slash->argv[slash->optind][++(slash->sp)] == '\0') {
+			slash->optind++;
+			slash->sp = 1;
+		}
+		return '?';
+	}
+
+	if (*(++cp) == ':') {
+		if (slash->argv[slash->optind][slash->sp+1] != '\0') {
+			slash->optarg = &slash->argv[(slash->optind)++][slash->sp+1];
+		} else if(++(slash->optind) >= slash->argc) {
+			slash_printf(slash, "Option -%c requires an argument\n", c);
+			slash->sp = 1;
+			return '?';
+		} else {
+			slash->optarg = slash->argv[(slash->optind)++];
+		}
+		slash->sp = 1;
+	} else {
+		if (slash->argv[slash->optind][++(slash->sp)] == '\0') {
+			slash->sp = 1;
+			slash->optind++;
+		}
+		slash->optarg = NULL;
+	}
+
+	return c;
+}
 
 /* Terminal handling */
 static size_t slash_escaped_strlen(const char *s)
@@ -92,7 +142,7 @@ static size_t slash_escaped_strlen(const char *s)
 
 static int slash_rawmode_enable(struct slash *slash)
 {
-#ifdef HAVE_TERMIOS_H
+#ifdef SLASH_HAVE_TERMIOS_H
 	struct termios raw;
 
 	if (tcgetattr(slash->fd_read, &slash->original) < 0)
@@ -112,29 +162,17 @@ static int slash_rawmode_enable(struct slash *slash)
 
 static int slash_rawmode_disable(struct slash *slash)
 {
-#ifdef HAVE_TERMIOS_H
+#ifdef SLASH_HAVE_TERMIOS_H
 	if (tcsetattr(slash->fd_read, TCSANOW, &slash->original) < 0)
 		return -ENOTTY;
 #endif
 	return 0;
 }
 
-static void slash_atexit(void)
-{
-	// FIXME slash_rawmode_disable(slash);
-}
-
 static int slash_configure_term(struct slash *slash)
 {
 	if (slash_rawmode_enable(slash) < 0)
 		return -ENOTTY;
-
-	slash->rawmode = true;
-
-	if (!slash->atexit_registered) {
-		atexit(slash_atexit);
-		slash->atexit_registered = true;
-	}
 
 	return 0;
 }
@@ -143,8 +181,6 @@ static int slash_restore_term(struct slash *slash)
 {
 	if (slash_rawmode_disable(slash) < 0)
 		return -ENOTTY;
-
-	slash->rawmode = false;
 
 	return 0;
 }
@@ -168,10 +204,7 @@ static int slash_getchar(struct slash *slash)
 {
 	unsigned char c;
 
-#if defined(SLASH_ASF)
-	while (!stdio_is_byte_pending())
-		vTaskDelay(1);
-#endif
+	//Todo handle poll interval
 
 	if (slash_read(slash, &c, 1) < 1)
 		return -EIO;
@@ -179,20 +212,46 @@ static int slash_getchar(struct slash *slash)
 	return c;
 }
 
-int slash_getchar_nonblock(struct slash *slash)
+#ifdef SLASH_HAVE_SELECT
+static int slash_wait_select(struct slash *slash, unsigned int ms)
 {
-	unsigned char c;
+	int ret = 0;
+	char c;
+	fd_set fds;
+	struct timeval timeout;
 
-	/* Set nonblocking */
+	timeout.tv_sec = ms / 1000;
+	timeout.tv_usec = ms - timeout.tv_sec * 1000;
+
+	FD_ZERO(&fds);
+	FD_SET(slash->fd_read, &fds);
+
 	fcntl(slash->fd_read, F_SETFL, fcntl(slash->fd_read, F_GETFL) |  O_NONBLOCK);
 
-	if (slash_read(slash, &c, 1) < 1)
-		return -EIO;
+	ret = select(1, &fds, NULL, NULL, &timeout);
+	if (ret == 1) {
+		ret = -EINTR;
+		slash_read(slash, &c, 1);
+	}
 
-	/* Set back to blocking */
 	fcntl(slash->fd_read, F_SETFL, fcntl(slash->fd_read, F_GETFL) & ~O_NONBLOCK);
 
-	return c;
+	return ret;
+}
+#endif
+
+int slash_set_wait_interruptible(struct slash *slash, slash_waitfunc_t waitfunc)
+{
+	slash->waitfunc = waitfunc;
+	return 0;
+}
+
+int slash_wait_interruptible(struct slash *slash, unsigned int ms)
+{
+	if (slash->waitfunc)
+		return slash->waitfunc(slash, ms);
+
+	return -ENOSYS;
 }
 
 int slash_printf(struct slash *slash, const char *format, ...)
@@ -209,10 +268,15 @@ int slash_printf(struct slash *slash, const char *format, ...)
 	return ret;
 }
 
+void slash_bell(struct slash *slash)
+{
+	slash_putchar(slash, '\a');
+}
+
 static bool slash_line_empty(char *line, size_t linelen)
 {
 	while (*line && linelen--)
-		if (!isspace(*line++))
+		if (!isspace((unsigned int) *line++))
 			return false;
 
 	return true;
@@ -337,13 +401,6 @@ int slash_execute(struct slash *slash, char *line)
 	}
 
 	if (!command->func) {
-		// TODO: Help user here with autocomplete?
-#if 0
-		slash_printf(slash, "Available subcommands in \'%s\' group:\n",
-			     command->name);
-		slash_list_for_each(cur, &command->sub, command)
-			slash_command_description(slash, cur);
-#endif
 		return -EINVAL;
 	}
 
@@ -353,11 +410,12 @@ int slash_execute(struct slash *slash, char *line)
 		return -EINVAL;
 	}
 
-	/* Reset state for getopt(3) */
-	optarg = 0;
-	optind = 0;
-	opterr = 1;
-	optopt = '?';
+	/* Reset state for slash_getopt */
+	slash->optarg = 0;
+	slash->optind = 1;
+	slash->opterr = 1;
+	slash->optopt = '?';
+	slash->sp = 1;
 
 	slash->argc = argc;
 	slash->argv = argv;
@@ -370,11 +428,6 @@ int slash_execute(struct slash *slash, char *line)
 }
 
 /* Completion */
-void slash_bell(struct slash *slash)
-{
-	slash_putchar(slash, '\a');
-}
-
 int slash_prefix_length(const char *s1, const char *s2)
 {
 	int len = 0;
@@ -496,7 +549,6 @@ static size_t slash_history_strlen(struct slash *slash, char *ptr)
 
 	return len;
 }
-
 
 static void slash_history_copy(struct slash *slash, char *dst, char *src, size_t len)
 {
@@ -738,9 +790,9 @@ static void slash_delete(struct slash *slash)
 	}
 }
 
-static void slash_clear_screen(struct slash *slash)
+void slash_clear_screen(struct slash *slash)
 {
-	char *esc = (char *) ESCAPE("H") ESCAPE("2J");
+	const char *esc = ESCAPE("H") ESCAPE("2J");
 	slash_write(slash, esc, strlen(esc));
 }
 
@@ -788,9 +840,6 @@ char *slash_readline(struct slash *slash, const char *prompt)
 	char *ret = slash->buffer;
 	int c, esc[3];
 	bool done = false, escaped = false;
-
-	if (slash_configure_term(slash) < 0)
-		return NULL;
 
 	slash->prompt = prompt;
 	slash->prompt_length = strlen(prompt);
@@ -907,7 +956,6 @@ char *slash_readline(struct slash *slash, const char *prompt)
 			slash_refresh(slash);
 	}
 
-	slash_restore_term(slash);
 	slash_putchar(slash, '\n');
 	slash_history_add(slash, slash->buffer);
 
@@ -967,14 +1015,20 @@ static int slash_builtin_history(struct slash *slash)
 slash_command(history, slash_builtin_history, NULL,
 	      "Show previous commands");
 
-#if !SLASH_NOEXIT
+#ifndef SLASH_NO_EXIT
 static int slash_builtin_exit(struct slash *slash)
 {
+	(void)slash;
 	return SLASH_EXIT;
 }
 slash_command(exit, slash_builtin_exit, NULL,
-	      "Exit slash");
+	      "Exit application");
 #endif
+
+void slash_require_activation(struct slash *slash, bool activate)
+{
+	slash->use_activate = activate;
+}
 
 static int slash_builtin_watch(struct slash *slash)
 {
@@ -1002,18 +1056,7 @@ static int slash_builtin_watch(struct slash *slash)
 		slash_execute(slash, cmd_exec);
 
 		/* Delay (press enter to exit) */
-#if 1
-		if (stdio_is_byte_pending())
-#else
-		if (slash_getchar_nonblock(slash) != -EIO)
-#endif
-			break;
-		usleep(interval);
-#if 1
-		if (stdio_is_byte_pending())
-#else
-		if (slash_getchar_nonblock(slash) != -EIO)
-#endif
+		if (slash_wait_interruptible(slash, interval) != 0)
 			break;
 
 	}
@@ -1025,9 +1068,19 @@ slash_command(watch, slash_builtin_watch, "<interval> <cmd>", "Loop command");
 /* Core */
 int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_bad)
 {
-	int ret;
+	int c, ret;
 	char *line;
 	const char *prompt = prompt_good;
+
+	if (slash_configure_term(slash) < 0)
+		return -ENOTTY;
+
+	if (slash->use_activate) {
+		slash_printf(slash, "Press enter to activate this console ");
+		do {
+			c = slash_getchar(slash);
+		} while (c != '\n' && c != '\r');
+	}
 
 	while ((line = slash_readline(slash, prompt))) {
 		if (!slash_line_empty(line, strlen(line))) {
@@ -1046,6 +1099,8 @@ int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_
 		}
 	}
 
+	slash_restore_term(slash);
+
 	return 0;
 }
 
@@ -1054,24 +1109,27 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	struct slash *slash;
 
 	/* Allocate slash context */
-	slash = calloc(sizeof(*slash), 1);
+	slash = calloc(1, sizeof(*slash));
 	if (!slash)
 		return NULL;
 
 	/* Setup default values */
 	slash->fd_read = STDIN_FILENO;
 	slash->fd_write = STDOUT_FILENO;
+#ifdef SLASH_HAVE_SELECT
+	slash->waitfunc = slash_wait_select;
+#endif
 
 	/* Allocate zero-initialized line and history buffers */
 	slash->line_size = line_size;
-	slash->buffer = calloc(slash->line_size, 1);
+	slash->buffer = calloc(1, slash->line_size);
 	if (!slash->buffer) {
 		free(slash);
 		return NULL;
 	}
 
 	slash->history_size = history_size;
-	slash->history = calloc(slash->history_size, 1);
+	slash->history = calloc(1, slash->history_size);
 	if (!slash->history) {
 		free(slash->buffer);
 		free(slash);
@@ -1083,13 +1141,6 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_tail = slash->history;
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
-
-	/* Register commands */
-	/*
-	slash_list_init(&slash->commands);
-	slash_for_each_command(cmd)
-		slash_command_register(slash, cmd, cmd->group);
-	*/
 
 	return slash;
 }
@@ -1104,4 +1155,6 @@ void slash_destroy(struct slash *slash)
 		free(slash->history);
 		slash->history = NULL;
 	}
+
+	free(slash);
 }

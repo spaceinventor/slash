@@ -6,7 +6,7 @@ slash_sources = files([
 
 conf = configuration_data()
 if meson.get_compiler('c').has_header('sys/termios.h')
-	conf.set('HAVE_TERMIOS_H', true)
+	conf.set('SLASH_HAVE_TERMIOS_H', true)
 endif
 
 slash_config_h = configure_file(output: 'slash_config.h', configuration: conf)

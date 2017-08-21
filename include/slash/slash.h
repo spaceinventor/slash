@@ -29,24 +29,16 @@
 
 #include <slash_config.h>
 
-#ifdef HAVE_TERMIOS_H
+#ifdef SLASH_HAVE_TERMIOS_H
 #include <termios.h>
 #endif
 
 /* Helper macros */
-#ifndef offsetof
-#define offsetof(type, member) ((size_t) &((type *)0)->member)
-#endif
+#define slash_offsetof(type, member) ((size_t) &((type *)0)->member)
 
-#ifndef container_of
-#define container_of(ptr, type, member) ({			\
+#define slash_container_of(ptr, type, member) ({		\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-	(type *)(intptr_t)( (char *)__mptr - offsetof(type,member) );})
-#endif
-
-#ifndef stringify
-#define stringify(_var) #_var
-#endif
+	(type *)( (void *)__mptr - offsetof(type,member) );})
 
 #define slash_max(a,b) \
 	({ __typeof__ (a) _a = (a); \
@@ -100,6 +92,11 @@
 /* Command prototype */
 struct slash;
 typedef int (*slash_func_t)(struct slash *slash);
+
+/* Wait function prototype */
+typedef int (*slash_waitfunc_t)(struct slash *slash, unsigned int ms);
+
+/* Autocomplete function prototype */
 typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 
 /* Command return values */
@@ -108,12 +105,14 @@ typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 #define SLASH_EUSAGE	(-1)
 #define SLASH_EINVAL	(-2)
 #define SLASH_ENOSPC	(-3)
-#define SLASH_ENOMEM	(-4)
+#define SLASH_EIO	(-4)
+#define SLASH_ENOMEM	(-5)
+#define SLASH_ENOENT	(-6)
 
 /* Command struct */
-struct __attribute__((aligned(1))) slash_command {
+struct slash_command {
 	/* Static data */
-	const char *name;
+	char *name;
 	const slash_func_t func;
 	const char *args;
 	const slash_completer_func_t completer;
@@ -123,13 +122,13 @@ struct __attribute__((aligned(1))) slash_command {
 struct slash {
 
 	/* Terminal handling */
-#ifdef HAVE_TERMIOS_H
+#ifdef SLASH_HAVE_TERMIOS_H
 	struct termios original;
 #endif
-	bool rawmode;
-	bool atexit_registered;
 	int fd_write;
 	int fd_read;
+	slash_waitfunc_t waitfunc;
+	bool use_activate;
 
 	/* Line editing */
 	size_t line_size;
@@ -155,6 +154,13 @@ struct slash {
 	/* Command interface */
 	char **argv;
 	int argc;
+
+	/* getopt state */
+	char *optarg;
+	int optind;
+	int opterr;
+	int optopt;
+	int sp;
 };
 
 struct slash *slash_create(size_t line_size, size_t history_size);
@@ -167,12 +173,16 @@ int slash_execute(struct slash *slash, char *line);
 
 int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_bad);
 
-int slash_getchar_nonblock(struct slash *slash);
+int slash_wait_interruptible(struct slash *slash, unsigned int ms);
+
+int slash_set_wait_interruptible(struct slash *slash, slash_waitfunc_t waitfunc);
 
 int slash_printf(struct slash *slash, const char *format, ...);
 
-int slash_prefix_length(const char *s1, const char *s2);
+int slash_getopt(struct slash *slash, const char *optstring);
 
-void slash_bell(struct slash *slash);
+void slash_clear_screen(struct slash *slash);
+
+void slash_require_activation(struct slash *slash, bool activate);
 
 #endif /* _SLASH_H_ */

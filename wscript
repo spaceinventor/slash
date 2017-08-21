@@ -1,37 +1,44 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+APPNAME = 'slash'
+VERSION = '0.1.0'
+
+top = '.'
+build = 'build'
+
 def options(ctx):
     gr = ctx.add_option_group('slash options')
-    gr.add_option('--slash-enabled', action='store', default=True)
-    gr.add_option('--slash-asf', action='store_true')
-    gr.add_option('--slash-csp', action='store_true')
+    gr.add_option('--slash-disable-exit', action='store_true', help='Disable exit command')
 
 def configure(ctx):
-    ctx.check(header_name='termios.h', features='c cprogram', mandatory=False)
-    
-    if ctx.options.slash_enabled:
-        ctx.define("SLASH_ENABLED", 1)
-        ctx.env.append_unique('FILES_SLASH', 'src/slash.c')
-        ctx.env.append_unique('USE_SLASH', 'csp')
-        
-        if ctx.options.slash_asf:
-            ctx.env.append_unique('FILES_SLASH', 'src/slash_asf.c')
-            ctx.env.append_unique('USE_SLASH', 'asf')
-            ctx.define('SLASH_ASF', '1')
-            
-        if ctx.options.slash_csp:
-            ctx.env.append_unique('FILES_SLASH', 'src/base16.c')
-            ctx.env.append_unique('FILES_SLASH', 'src/slash_csp.c')
-            ctx.env.append_unique('USE_SLASH', 'csp')
-        
-    ctx.write_config_header('include/slash_config.h')
+    # Load tool and set CFLAGS if not being recursed
+    if len(ctx.stack_path) < 2:
+        ctx.load('gcc')
+        ctx.env.CFLAGS = [
+            '-std=gnu11', '-Os', '-gdwarf',
+            '-Wall',
+            '-Wextra',
+            '-Wshadow',
+            '-Wstrict-prototypes',
+            '-Wmissing-prototypes',
+            '-Wno-unused-parameter']
+
+    ctx.check(header_name='termios.h', features='c cprogram', mandatory=False, define_name='SLASH_HAVE_TERMIOS_H')
+    ctx.define_cond('SLASH_NO_EXIT', ctx.options.slash_disable_exit)
 
 def build(ctx):
+    if len(ctx.stack_path) < 2:
+        ctx.load('gcc')
+
     ctx.objects(
-        target   = 'slash',
-        source   = ctx.env.FILES_SLASH,
+        target   = APPNAME,
+        source   = 'src/slash.c',
         includes = 'include',
-        use = ctx.env.USE_SLASH,
-        defines = ctx.env.DEFINES_SLASH,
         export_includes = 'include')
+
+    if len(ctx.stack_path) < 2:
+        ctx.program(
+            target   = APPNAME + 'test',
+            source   = 'test/slashtest.c',
+            use      = APPNAME)
