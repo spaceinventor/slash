@@ -1002,15 +1002,14 @@ static int slash_builtin_watch(struct slash *slash)
 		slash_execute(slash, cmd_exec);
 
 		/* Delay (press enter to exit) */
-#if defined(SLASH_ASF)
+#if 1
 		if (stdio_is_byte_pending())
 #else
 		if (slash_getchar_nonblock(slash) != -EIO)
 #endif
 			break;
-// TODO: Implement usleep in freertos csp/arch
-		//usleep(interval);
-#if defined(SLASH_ASF)
+		usleep(interval);
+#if 1
 		if (stdio_is_byte_pending())
 #else
 		if (slash_getchar_nonblock(slash) != -EIO)
