@@ -867,9 +867,9 @@ char *slash_readline(struct slash *slash, const char *prompt)
 				esc[2] = slash_getchar(slash);
 				if (esc[1] == '3' && esc[2] == '~')
 					slash_delete(slash);
-			} else if (esc[0] == 'O' && esc[1] == 'H') {
+			} else if (esc[0] == '[' && esc[1] == 'H') {
 				slash->cursor = 0;
-			} else if (esc[0] == 'O' && esc[1] == 'F') {
+			} else if (esc[0] == '[' && esc[1] == 'F') {
 				slash->cursor = slash->length;
 			} else if (esc[0] == '1' && esc[1] == '~') {
 				slash->cursor = 0;
