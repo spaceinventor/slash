@@ -206,8 +206,9 @@ static int slash_getchar(struct slash *slash)
 
 	//Todo handle poll interval
 
-	if (slash_read(slash, &c, 1) < 1)
+	if (slash_read(slash, &c, 1) < 1) {
 		return -EIO;
+	}
 
 	return c;
 }
@@ -385,7 +386,7 @@ static void slash_command_usage(struct slash *slash, struct slash_command *comma
 
 static void slash_command_description(struct slash *slash, struct slash_command *command)
 {
-	slash_printf(slash, "%-15s\n", command->name);
+	slash_printf(slash, "%-15s\r\n", command->name);
 }
 
 int slash_execute(struct slash *slash, char *line)
