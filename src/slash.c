@@ -735,8 +735,10 @@ static int slash_refresh(struct slash *slash)
 	/* Write the prompt and the current buffer content */
 	if (slash_write(slash, slash->prompt, slash->prompt_length) < 0)
 		return -1;
-	if (slash_write(slash, slash->buffer, slash->length) < 0)
-		return -1;
+	if (slash->length > 0) {
+		if (slash_write(slash, slash->buffer, slash->length) < 0)
+			return -1;
+	}
 
 	/* Erase to right */
 	snprintf(esc, sizeof(esc), ESCAPE("K"));
