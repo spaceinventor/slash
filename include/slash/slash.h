@@ -165,6 +165,8 @@ struct slash {
 
 struct slash *slash_create(size_t line_size, size_t history_size);
 
+void slash_create_static(struct slash *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size);
+
 void slash_destroy(struct slash *slash);
 
 char *slash_readline(struct slash *slash, const char *prompt);

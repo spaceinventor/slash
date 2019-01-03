@@ -1148,6 +1148,31 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	return slash;
 }
 
+void slash_create_static(struct slash *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size)
+{
+	/* Setup default values */
+	slash->fd_read = STDIN_FILENO;
+	slash->fd_write = STDOUT_FILENO;
+#ifdef SLASH_HAVE_SELECT
+	slash->waitfunc = slash_wait_select;
+#endif
+
+	/* Allocate zero-initialized line and history buffers */
+	slash->line_size = line_size;
+	slash->buffer = line_buf;
+
+	slash->history_size = history_size;
+	slash->history = hist_buf;
+
+	/* Initialize history */
+	slash->history_head = slash->history;
+	slash->history_tail = slash->history;
+	slash->history_cursor = slash->history;
+	slash->history_avail = slash->history_size - 1;
+
+	return slash;
+}
+
 void slash_destroy(struct slash *slash)
 {
 	if (slash->buffer) {
