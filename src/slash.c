@@ -1169,8 +1169,6 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 	slash->history_tail = slash->history;
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
-
-	return slash;
 }
 
 void slash_destroy(struct slash *slash)
