@@ -262,7 +262,7 @@ int slash_printf(struct slash *slash, const char *format, ...)
 
 	va_start(args, format);
 
-	ret = vdprintf(slash->fd_write, format, args);
+	ret = vprintf(format, args);
 
 	va_end(args);
 
