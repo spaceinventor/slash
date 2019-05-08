@@ -93,8 +93,9 @@
 struct slash;
 typedef int (*slash_func_t)(struct slash *slash);
 
-/* Wait function prototype */
-typedef int (*slash_waitfunc_t)(struct slash *slash, unsigned int ms);
+/* Wait function prototype,
+ * this function is implemented by user, so use a void* instead of struct slash* */
+typedef int (*slash_waitfunc_t)(void *slash, unsigned int ms);
 
 /* Autocomplete function prototype */
 typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
