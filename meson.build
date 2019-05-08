@@ -19,7 +19,12 @@ install_headers(slash_config_h, install_dir : 'include/slash')
 
 slash_inc = include_directories('.', 'include')
 	
-slash_dep = declare_dependency(
+slash_lib = static_library('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
-	)
+)
+	
+slash_dep = declare_dependency(
+	include_directories : slash_inc,
+	link_with : slash_lib
+)
