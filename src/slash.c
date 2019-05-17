@@ -214,12 +214,13 @@ static int slash_getchar(struct slash *slash)
 }
 
 #ifdef SLASH_HAVE_SELECT
-static int slash_wait_select(struct slash *slash, unsigned int ms)
+static int slash_wait_select(void *slashp, unsigned int ms)
 {
 	int ret = 0;
 	char c;
 	fd_set fds;
 	struct timeval timeout;
+	struct slash * slash = (struct slash *) slashp;
 
 	timeout.tv_sec = ms / 1000;
 	timeout.tv_usec = (ms % 1000) * 1000;
