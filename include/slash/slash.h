@@ -52,7 +52,7 @@
 
 #define __slash_command(_ident, _name, _func, _completer, _args, _help) 	\
 	__attribute__((section("slash")))				\
-	__attribute__((aligned(1))) \
+	__attribute__((aligned(4))) \
 	__attribute__((used))						\
 	const struct slash_command _ident = {					\
 		.name  = _name,				\
