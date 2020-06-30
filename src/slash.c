@@ -204,8 +204,6 @@ static int slash_getchar(struct slash *slash)
 {
 	unsigned char c;
 
-	//Todo handle poll interval
-
 	if (slash_read(slash, &c, 1) < 1) {
 		return -EIO;
 	}
