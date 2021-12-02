@@ -17,15 +17,17 @@ slash_config_h = configure_file(output: 'slash_config.h', configuration: conf)
 
 slash_inc = include_directories('.', 'include')
 
-dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], required: false)
+dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], default_options: ['default_library=static'], required: false)
 	
 slash_lib = static_library('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
+	install : false
 )
 	
 slash_dep = declare_dependency(
 	include_directories : slash_inc,
-	link_with : slash_lib
+	link_with : slash_lib,
 )
+
