@@ -34,6 +34,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <time.h>
+#include <sys/time.h>
 
 #ifdef SLASH_HAVE_TERMIOS_H
 #include <termios.h>
@@ -719,7 +721,7 @@ static void slash_insert(struct slash *slash, int c)
 	}
 }
 
-static int slash_refresh(struct slash *slash)
+static int slash_refresh(struct slash *slash, int printtime)
 {
 	char esc[16];
 
@@ -731,13 +733,37 @@ static int slash_refresh(struct slash *slash)
 	if (slash_write(slash, esc, strlen(esc)) < 0)
 		return -1;
 
-	/* Write the prompt and the current buffer content */
-	if (slash_write(slash, slash->prompt, slash->prompt_length) < 0)
-		return -1;
-	if (slash->length > 0) {
-		if (slash_write(slash, slash->buffer, slash->length) < 0)
+	int timelen = 0;
+	if (printtime) {
+		char buf[30];
+		struct timeval tmnow;
+		struct tm *tm;
+		gettimeofday(&tmnow, NULL);
+		tm = localtime(&tmnow.tv_sec);
+		strftime(buf, 30, " @ %H:%M:%S d. %d/%m/%y", tm);
+		timelen = 21;
+
+		/* Write the prompt and the current buffer content */
+		slash_write(slash, "\033[32m", 5);
+		slash_write(slash, "run % ", 6);
+		slash_write(slash, "\033[0m", 4);
+		slash_write(slash, slash->buffer, slash->length);
+		slash_write(slash, "\033[1;30m", 7);
+		slash_write(slash, buf, strlen(buf));
+		slash_write(slash, "\033[0m", 4);
+	} else {
+
+		/* Write the prompt and the current buffer content */
+		if (slash_write(slash, slash->prompt, slash->prompt_length) < 0)
 			return -1;
+	
+		if (slash->length > 0) {
+			if (slash_write(slash, slash->buffer, slash->length) < 0)
+				return -1;
+		}
+
 	}
+
 
 	/* Erase to right */
 	snprintf(esc, sizeof(esc), ESCAPE("K"));
@@ -745,8 +771,7 @@ static int slash_refresh(struct slash *slash)
 		return -1;
 
 	/* Move cursor to original position. */
-	snprintf(esc, sizeof(esc), "\r" ESCAPE_NUM("C"),
-		(unsigned int)(slash->cursor + slash->prompt_print_length));
+	snprintf(esc, sizeof(esc), "\r" ESCAPE_NUM("C"), (unsigned int)(slash->cursor + slash->prompt_print_length + timelen));
 	if (slash_write(slash, esc, strlen(esc)) < 0)
 		return -1;
 
@@ -849,7 +874,7 @@ char *slash_readline(struct slash *slash, const char *prompt)
 
 	/* Reset buffer */
 	slash_reset(slash);
-	slash_refresh(slash);
+	slash_refresh(slash, 0);
 
 	while (!done && ((c = slash_getchar(slash)) >= 0)) {
 		if (escaped) {
@@ -955,9 +980,14 @@ char *slash_readline(struct slash *slash, const char *prompt)
 		slash->last_char = c;
 
 		if (!done)
-			slash_refresh(slash);
+			slash_refresh(slash, 0);
 	}
 
+	if (strlen(slash->buffer) == 0) {
+		slash_refresh(slash, 0);
+	} else {
+		slash_refresh(slash, 1);
+	}
 	slash_putchar(slash, '\n');
 	slash_history_add(slash, slash->buffer);
 
