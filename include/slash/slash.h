@@ -192,4 +192,6 @@ void slash_bell(struct slash *slash);
 
 int slash_prefix_length(const char *s1, const char *s2);
 
+int slash_refresh(struct slash *slash, int printtime);
+
 #endif /* _SLASH_H_ */

@@ -721,7 +721,7 @@ static void slash_insert(struct slash *slash, int c)
 	}
 }
 
-static int slash_refresh(struct slash *slash, int printtime)
+int slash_refresh(struct slash *slash, int printtime)
 {
 	char esc[16];
 
