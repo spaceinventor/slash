@@ -121,27 +121,6 @@ int slash_getopt(struct slash *slash, const char *opts)
 	return c;
 }
 
-/* Terminal handling */
-static size_t slash_escaped_strlen(const char *s)
-{
-	int len = 0;
-	bool escaped = false;
-
-	while (*s) {
-		if (escaped) {
-			if (*s == 'm')
-				escaped = false;
-		} else if (*s == ESC) {
-			escaped = true;
-		} else {
-			len++;
-		}
-		s++;
-	}
-
-	return len;
-}
-
 static int slash_rawmode_enable(struct slash *slash)
 {
 #ifdef SLASH_HAVE_TERMIOS_H
@@ -187,7 +166,7 @@ static int slash_restore_term(struct slash *slash)
 	return 0;
 }
 
-static int slash_write(struct slash *slash, const char *buf, size_t count)
+int slash_write(struct slash *slash, const char *buf, size_t count)
 {
 	return write(slash->fd_write, buf, count);
 }
@@ -730,8 +709,14 @@ int slash_refresh(struct slash *slash, int printtime)
 
 	/* Move cursor to left edge */
 	snprintf(esc, sizeof(esc), "\r");
-	if (slash_write(slash, esc, strlen(esc)) < 0)
-		return -1;
+	slash_write(slash, esc, strlen(esc));
+	
+	slash->prompt_print_length = slash_prompt(slash);
+
+	if (slash->length > 0) {
+		if (slash_write(slash, slash->buffer, slash->length) < 0)
+			return -1;
+	}
 
 	int timelen = 0;
 	if (printtime) {
@@ -746,26 +731,10 @@ int slash_refresh(struct slash *slash, int printtime)
 #endif
 
 		/* Write the prompt and the current buffer content */
-		slash_write(slash, "\033[32m", 5);
-		slash_write(slash, "run % ", 6);
-		slash_write(slash, "\033[0m", 4);
-		slash_write(slash, slash->buffer, slash->length);
 		slash_write(slash, "\033[1;30m", 7);
 		slash_write(slash, buf, strlen(buf));
 		slash_write(slash, "\033[0m", 4);
-	} else {
-
-		/* Write the prompt and the current buffer content */
-		if (slash_write(slash, slash->prompt, slash->prompt_length) < 0)
-			return -1;
-	
-		if (slash->length > 0) {
-			if (slash_write(slash, slash->buffer, slash->length) < 0)
-				return -1;
-		}
-
 	}
-
 
 	/* Erase to right */
 	snprintf(esc, sizeof(esc), ESCAPE("K"));
@@ -863,16 +832,12 @@ static void slash_swap(struct slash *slash)
 			slash->cursor++;
 	}
 }
-
-char *slash_readline(struct slash *slash, const char *prompt)
+#include <stdlib.h>
+char *slash_readline(struct slash *slash)
 {
 	char *ret = slash->buffer;
 	int c, esc[3];
 	bool done = false, escaped = false;
-
-	slash->prompt = prompt;
-	slash->prompt_length = strlen(prompt);
-	slash->prompt_print_length = slash_escaped_strlen(prompt);
 
 	/* Reset buffer */
 	slash_reset(slash);
@@ -1100,11 +1065,10 @@ static int slash_builtin_watch(struct slash *slash)
 slash_command(watch, slash_builtin_watch, "<interval> <cmd>", "Loop command");
 
 /* Core */
-int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_bad)
+int slash_loop(struct slash *slash)
 {
 	int c, ret;
 	char *line;
-	const char *prompt = prompt_good;
 
 	if (slash_configure_term(slash) < 0)
 		return -ENOTTY;
@@ -1116,20 +1080,12 @@ int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_
 		} while (c != '\n' && c != '\r');
 	}
 
-	while ((line = slash_readline(slash, prompt))) {
+	while ((line = slash_readline(slash))) {
 		if (!slash_line_empty(line, strlen(line))) {
 			/* Run command */
 			ret = slash_execute(slash, line);
 			if (ret == SLASH_EXIT)
 				break;
-
-			/* Update prompt if enabled */
-			if (prompt_bad && ret != SLASH_SUCCESS)
-				prompt = prompt_bad;
-			else
-				prompt = prompt_good;
-		} else {
-			prompt = prompt_good;
 		}
 	}
 

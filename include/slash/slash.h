@@ -170,11 +170,11 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 
 void slash_destroy(struct slash *slash);
 
-char *slash_readline(struct slash *slash, const char *prompt);
+char *slash_readline(struct slash *slash);
 
 int slash_execute(struct slash *slash, char *line);
 
-int slash_loop(struct slash *slash, const char *prompt_good, const char *prompt_bad);
+int slash_loop(struct slash *slash);
 
 int slash_wait_interruptible(struct slash *slash, unsigned int ms);
 
@@ -193,5 +193,9 @@ void slash_bell(struct slash *slash);
 int slash_prefix_length(const char *s1, const char *s2);
 
 int slash_refresh(struct slash *slash, int printtime);
+
+int slash_write(struct slash *slash, const char *buf, size_t count);
+
+int slash_prompt(struct slash * slash);
 
 #endif /* _SLASH_H_ */
