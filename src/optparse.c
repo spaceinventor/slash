@@ -293,8 +293,6 @@ optparse_handle_int(optparse_opt_t * opt, const char * arg) {
 	long l;
 	char * p;
 
-	printf("Handle int %s\n", arg);
-
 	l = strtol(arg, &p, opt->spec.num_base);
 	if (*p || l < INT_MIN || l > INT_MAX) {
 		fprintf(stderr, "%s: invalid number \"%s\"\n",
