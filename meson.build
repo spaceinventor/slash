@@ -4,6 +4,7 @@ slash_sources = files([
 	'src/slash.c',
 	'src/optparse.c',
 	'src/dflopt.c',
+	'src/run.c',
 	])
 
 conf = configuration_data()
