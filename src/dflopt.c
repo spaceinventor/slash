@@ -7,7 +7,7 @@ unsigned int slash_dfl_timeout = 1000;
 
 static int cmd_node(struct slash *slash) {
 
-	if (slash->argc >= 1) {
+	if (slash->argc == 2) {
 
 		/* We rely on user to provide known hosts implemetnation */
 		int known_hosts_get_node(char * find_name);
@@ -23,7 +23,7 @@ slash_command(node, cmd_node, "<node>", NULL);
 
 static int cmd_timeout(struct slash *slash) {
 
-	if (slash->argc >= 1) {
+	if (slash->argc == 2) {
 		slash_dfl_timeout = atoi(slash->argv[1]);
 	}
 
