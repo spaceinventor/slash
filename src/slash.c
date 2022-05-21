@@ -22,6 +22,8 @@
  */
 
 #include <slash/slash.h>
+#include <slash/optparse.h>
+#include <slash/dflopt.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1031,28 +1033,44 @@ void slash_require_activation(struct slash *slash, bool activate)
 
 static int slash_builtin_watch(struct slash *slash)
 {
-	if (slash->argc < 3)
-		return SLASH_EUSAGE;
 
-	char * endptr = NULL;
-	unsigned int interval = strtoul(slash->argv[1], &endptr, 10);
-	if (*endptr != '\0')
-		return SLASH_EUSAGE;
+	unsigned int interval = slash_dfl_timeout;
+	unsigned int count = 0;
 
-	printf("Executing \"%s\" each %u ms - press <enter> to stop\n", slash->argv[2], interval);
+    optparse_t * parser = optparse_new("watch", "<command...>");
+    optparse_add_help(parser);
+	optparse_add_unsigned(parser, 'n', "interval", "NUM", 0, &interval, "interval in milliseconds (default = <env timeout>)");
+	optparse_add_unsigned(parser, 'c', "count", "NUM", 0, &count, "number of times to repeat (default = infinite)");
 
-	/* Take a compy of the cmd */
-	char cmd[slash->line_size];
-	strncpy(cmd, slash->argv[2], slash->line_size);
+    int argi = optparse_parse(parser, slash->argc - 1, (const char **) slash->argv + 1);
+    if (argi < 0) {
+        optparse_del(parser);
+	    return SLASH_EINVAL;
+    }
+
+	/* Build command string */
+
+	char line[slash->line_size];
+	line[0] = '\0';
+	for (int arg = argi + 1; arg < slash->argc; arg++) {
+		strncat(line, slash->argv[arg], slash->line_size - strlen(line));
+		strncat(line, " ", slash->line_size - strlen(line));
+	}
+
+	printf("Executing \"%s\" each %u ms - press <enter> to stop\n", line, interval);
 
 	while(1) {
 
 		/* Make another copy, since slash_exec will modify this */
 		char cmd_exec[slash->line_size];
-		strncpy(cmd_exec, cmd, slash->line_size);
+		strncpy(cmd_exec, line, slash->line_size);
 
 		/* Execute command */
 		slash_execute(slash, cmd_exec);
+
+		if ((count > 0) && (count-- == 1)) {
+				break;
+		}		
 
 		/* Delay (press enter to exit) */
 		if (slash_wait_interruptible(slash, interval) != 0)
@@ -1062,7 +1080,7 @@ static int slash_builtin_watch(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command(watch, slash_builtin_watch, "<interval> <cmd>", "Loop command");
+slash_command(watch, slash_builtin_watch, "<command...>", "Repeat a command");
 
 /* Core */
 int slash_loop(struct slash *slash)
