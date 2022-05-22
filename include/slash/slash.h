@@ -198,6 +198,6 @@ int slash_write(struct slash *slash, const char *buf, size_t count);
 
 int slash_prompt(struct slash * slash);
 
-int slash_run(struct slash *slash, char * filename);
+int slash_run(struct slash *slash, char * filename, int printcmd);
 
 #endif /* _SLASH_H_ */

@@ -2,7 +2,7 @@
 #include <slash/optparse.h>
 #include <string.h>
 
-int slash_run(struct slash *slash, char * filename) {
+int slash_run(struct slash *slash, char * filename, int printcmd) {
 
     /* Read from file */
 	FILE * stream = fopen(filename, "r");
@@ -30,7 +30,9 @@ int slash_run(struct slash *slash, char * filename) {
             continue;
         }
 
-        printf("run: %s\n", line);
+        if (printcmd)
+            printf("  run: %s\n", line);
+
         slash_execute(slash, line);
     }
 
@@ -61,7 +63,7 @@ static int cmd_run(struct slash *slash) {
 
     printf("Running %s\n", name);
 
-    return slash_run(slash, name);
+    return slash_run(slash, name, 1);
 
 }
 
