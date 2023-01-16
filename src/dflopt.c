@@ -7,9 +7,16 @@ unsigned int slash_dfl_timeout = 1000;
 
 static int cmd_node(struct slash *slash) {
 
+	if (slash->argc < 1) {
+		/* Only print node when explicitly asked,
+			as it should be shown in the prompt.
+			(it may be truncated when the hostname is too long) */
+		printf("Default node = %d\n", slash_dfl_node);
+	}
+
 	if (slash->argc == 2) {
 
-		/* We rely on user to provide known hosts implemetnation */
+		/* We rely on user to provide known hosts implementation */
 		int known_hosts_get_node(char * find_name);
 		slash_dfl_node = known_hosts_get_node(slash->argv[1]);
 		if (slash_dfl_node == 0)
@@ -18,7 +25,7 @@ static int cmd_node(struct slash *slash) {
 
 	return SLASH_SUCCESS;
 }
-slash_command(node, cmd_node, "<node>", NULL);
+slash_command(node, cmd_node, "[node]", "Set global default node");
 
 
 static int cmd_timeout(struct slash *slash) {
@@ -31,4 +38,4 @@ static int cmd_timeout(struct slash *slash) {
 
 	return SLASH_SUCCESS;
 }
-slash_command(timeout, cmd_timeout, "<timeout ms>", NULL);
+slash_command(timeout, cmd_timeout, "[timeout ms]", "Set global default timeout");
