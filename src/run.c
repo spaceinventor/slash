@@ -10,8 +10,8 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
 		return SLASH_EIO;
     }
 
-    char line[100];
-    while(fgets(line, 100, stream)) {
+    char line[512];
+    while(fgets(line, sizeof(line), stream)) {
         
         /* Strip newline */
         line[strcspn(line, "\n")] = 0;
