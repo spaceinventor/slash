@@ -434,7 +434,7 @@ static void slash_complete(struct slash *slash)
 
 	slash_for_each_command(cmd) {
 
-		if (strncmp(slash->buffer, cmd->name, buffer_len) == 0) {
+		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), buffer_len)) == 0) {
 
 			/* Count matches */
 			matches++;
