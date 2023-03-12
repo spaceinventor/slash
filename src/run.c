@@ -7,6 +7,7 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
     /* Read from file */
 	FILE * stream = fopen(filename, "r");
 	if (stream == NULL) {
+        printf("  File not found\n");
 		return SLASH_EIO;
     }
 
