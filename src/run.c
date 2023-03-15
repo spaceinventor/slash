@@ -7,7 +7,7 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
     /* Read from file */
 	FILE * stream = fopen(filename, "r");
 	if (stream == NULL) {
-        printf("  File not found\n");
+        printf("  File %s not found\n", filename);
 		return SLASH_EIO;
     }
 
@@ -23,11 +23,6 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
 
         /* Skip comments */
         if (line[0] == '/') {
-            continue;
-        }
-
-        /* Skip comments */
-        if (line[0] == '#') {
             continue;
         }
 

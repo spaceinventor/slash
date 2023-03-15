@@ -377,6 +377,11 @@ int slash_execute(struct slash *slash, char *line)
 	char *args, *argv[SLASH_ARG_MAX];
 	int ret, argc = 0;
 
+	/* Skip comments */
+	if (line[0] == '#') {
+		return SLASH_SUCCESS;
+	}
+
 	command = slash_command_find(slash, line, strlen(line), &args);
 	if (!command) {
 		slash_printf(slash, "No such command: %s\n", line);
