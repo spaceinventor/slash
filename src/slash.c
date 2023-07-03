@@ -269,7 +269,7 @@ void slash_command_list_add(struct slash *slash,
                             struct slash_command * stop)
 {
 
-	for (struct slash_command * cmd = stop - 1; cmd >= start; --cmd) {
+	for (struct slash_command * cmd = start; cmd < stop; ++cmd) {
 
         /* cmd->next: first entry  prev: none */
         cmd->next = slash->cmd_list;
