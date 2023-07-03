@@ -33,6 +33,26 @@
 #include <termios.h>
 #endif
 
+/* Support for merging the contents of the slash section of an addin (plugin)
+   into the list of slash records in the application, like csh. 
+   This must be called once, like where called slash_create. */
+#define SLASH_SECTION_INIT_NO_FUNC(secname)\
+    extern struct slash_command __start_ ## secname;\
+    extern struct slash_command __stop_ ## secname;\
+    __attribute__((unused)) static struct slash_command * slash_section_start = (struct slash_command *)&__start_ ## secname;\
+    __attribute__((unused)) static struct slash_command * slash_section_stop = (struct slash_command *)&__stop_ ## secname;
+
+#define SLASH_SECTION_INIT_FUNC\
+	__attribute__((unused)) void get_slash_pointers(struct slash_command ** start, struct slash_command ** stop) {\
+		*start = slash_section_start;\
+		*stop = slash_section_stop;\
+	}
+
+#define SLASH_SECTION_INIT(secname)\
+	SLASH_SECTION_INIT_NO_FUNC(secname)\
+	SLASH_SECTION_INIT_FUNC
+
+
 /* Helper macros */
 #define slash_offsetof(type, member) ((size_t) &((type *)0)->member)
 
@@ -50,40 +70,66 @@
 	__typeof__ (b) _b = (b); \
 	_a < _b ? _a : _b; })
 
-#define __slash_command(_ident, _name, _func, _completer, _args, _help) 	\
-	__attribute__((section("slash")))				\
-	__attribute__((aligned(4))) \
-	__attribute__((used))						\
-	const struct slash_command _ident = {					\
-		.name  = _name,				\
-		.func  = _func,						\
-		.completer  = _completer,						\
-		.args  = _args,						\
+#define __slash_command(_secname, _ident, _name, _func, _completer, _args, _help) 	\
+	__attribute__((section( #_secname )))\
+	__attribute__((aligned(4)))\
+	__attribute__((used))\
+	const struct slash_command _ident = {\
+		.name  = _name,\
+		.func  = _func,\
+		.completer  = _completer,\
+		.args  = _args,\
+        .next = 0,\
+        .file = __FILE__,\
+        .line = __LINE__,\
 	};
 
-#define slash_command(_name, _func, _args, _help)			\
-	__slash_command(slash_cmd_ ## _name,				\
+#define slash_sec_command(_section, _name, _func, _args, _help)\
+	__slash_command(_section, slash_cmd_ ## _name,				\
 			#_name, _func, NULL, _args, _help)
 
-#define slash_command_sub(_group, _name, _func, _args, _help)		\
-	__slash_command(slash_cmd_##_group ## _ ## _name ,		\
+#define slash_sec_command_sub(_section, _group, _name, _func, _args, _help)\
+	__slash_command(_section, slash_cmd_##_group ## _ ## _name ,\
 			#_group" "#_name, _func, NULL, _args, _help)
 
-#define slash_command_subsub(_group, _subgroup, _name, _func, _args, _help) \
-	__slash_command(slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
+#define slash_sec_command_subsub(_section, _group, _subgroup, _name, _func, _args, _help) \
+	__slash_command(_section, slash_cmd_ ## _group ## _ ## _subgroup ## _name,\
 			#_group" "#_subgroup" "#_name, _func, NULL, _args, _help)
 
-#define slash_command_completer(_name, _func, _completer, _args, _help)			\
-	__slash_command(slash_cmd_ ## _name,				\
+#define slash_sec_command_completer(_section, _name, _func, _completer, _args, _help)\
+	__slash_command(_section, slash_cmd_ ## _name,\
 			#_name, _func, _completer, _args, _help)
 
-#define slash_command_sub_completer(_group, _name, _func, _completer, _args, _help)		\
-	__slash_command(slash_cmd_##_group ## _ ## _name ,		\
+#define slash_sec_command_sub_completer(_section, _group, _name, _func, _completer, _args, _help)\
+	__slash_command(_section, slash_cmd_##_group ## _ ## _name ,\
 			#_group" "#_name, _func, _completer, _args, _help)
 
-#define slash_command_subsub_completer(_group, _subgroup, _name, _func, _completer, _args, _help) \
-	__slash_command(slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
+#define slash_sec_command_subsub_completer(_section, _group, _subgroup, _name, _func, _completer, _args, _help)\
+	__slash_command(_section, slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
 			#_group" "#_subgroup" "#_name, _func, _completer, _args, _help)
+
+/* Macros with no section argument that defaults to slash for backwards compatibility,
+   and for use in application. Dynamic libraries used as addin must specify a section name
+   that differ from slash and is unique amonh addins that are used simultaneously.  */
+
+#define slash_command(_name, _func, _args, _help)			\
+	slash_sec_command(slash, _name, _func, _args, _help)
+
+#define slash_command_sub(_group, _name, _func, _args, _help)		\
+	slash_sec_command_sub(slash, _group, _name, _func, _args, _help)
+
+#define slash_command_subsub(_group, _subgroup, _name, _func, _args, _help) \
+	slash_sec_command_subsub(slash, _group, _subgroup, _name, _func, _args, _help)
+
+#define slash_command_completer(_name, _func, _completer, _args, _help)			\
+	slash_sec_command_completer(slash, _name, _func, _completer, _args, _help)
+
+#define slash_command_sub_completer(_group, _name, _func, _completer, _args, _help)		\
+	slash_sec_command_sub_completer(slash, _group, _name, _func, _completer, _args, _help)
+
+#define slash_command_subsub_completer(_group, _subgroup, _name, _func, _completer, _args, _help) \
+	slash_sec_command_subsub_completer(slash, _group, _subgroup, _name, _func, _completer, _args, _help)
+
 
 #define slash_command_group(_name, _help)
 
@@ -117,6 +163,10 @@ struct slash_command {
 	const slash_func_t func;
 	const char *args;
 	const slash_completer_func_t completer;
+    struct slash_command * next;
+
+    const char * file;
+    int line;
 };
 
 /* Slash context */
@@ -162,6 +212,9 @@ struct slash {
 	int opterr;
 	int optopt;
 	int sp;
+
+    /* Command list */
+    struct slash_command * cmd_list;
 };
 
 struct slash *slash_create(size_t line_size, size_t history_size);
@@ -169,6 +222,10 @@ struct slash *slash_create(size_t line_size, size_t history_size);
 void slash_create_static(struct slash *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size);
 
 void slash_destroy(struct slash *slash);
+
+void slash_command_list_add(struct slash *slash,
+                            struct slash_command * start,
+                            struct slash_command * stop);
 
 char *slash_readline(struct slash *slash);
 

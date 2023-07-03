@@ -59,18 +59,17 @@
 #define ESCAPE(code) "\x1b[0" code
 #define ESCAPE_NUM(code) "\x1b[%u" code
 
-/* Created by GCC before and after slash ELF section */
-extern struct slash_command __start_slash;
-extern struct slash_command __stop_slash;
 
-/* Calculate command section size */
-static __attribute__((aligned(1))) const struct slash_command slash_size_dummy[2];
-#define SLASH_COMMAND_SIZE ((intptr_t) &slash_size_dummy[1] - (intptr_t) &slash_size_dummy[0])
+/* Define and initialize section variables */
+SLASH_SECTION_INIT_NO_FUNC(slash)
 
-#define slash_for_each_command(_c) \
-	for (_c = &__stop_slash-1; \
-	     _c >= &__start_slash; \
-	     _c = (struct slash_command *)(intptr_t)((char *)_c - SLASH_COMMAND_SIZE))
+//static __attribute__((aligned(1))) const struct slash_command slash_size_dummy[2];
+//#define SLASH_COMMAND_SIZE ((intptr_t) &slash_size_dummy[1] - (intptr_t) &slash_size_dummy[0])
+
+/* Iteration of command list */
+struct slash_command * slash_next_command(struct slash_command * cmd) {
+    return cmd ? cmd->next : 0;
+}
 
 /* Command-line option parsing */
 int slash_getopt(struct slash *slash, const char *opts)
@@ -265,20 +264,52 @@ static bool slash_line_empty(char *line, size_t linelen)
 	return true;
 }
 
+void slash_command_list_add(struct slash *slash,
+                            struct slash_command * start,
+                            struct slash_command * stop)
+{
+
+	for (struct slash_command * cmd = stop - 1; cmd >= start; --cmd) {
+
+        /* cmd->next: first entry  prev: none */
+        cmd->next = slash->cmd_list;
+    	struct slash_command * prev = 0;
+
+        /* As long af cmd->next is alphabetically lower than cmd */
+        while (cmd->next && (strcmp(cmd->name, cmd->next->name) > 0)) {
+            /* cmd->next: next entry  prev: previous entry */
+            prev = cmd->next;
+            cmd->next = cmd->next->next;
+        }
+
+        if (prev) {
+            /* Insert before cmd->next */
+            prev->next = cmd;
+        } else {
+            /* Insert as first entry */
+            slash->cmd_list = cmd;
+        }
+
+	}
+
+}
+
+void slash_command_list_init(struct slash *slash)
+{
+
+    slash->cmd_list = 0;
+	slash_command_list_add(slash, slash_section_start, slash_section_stop);
+
+}
+
 static struct slash_command *
 slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 {
-	struct slash_command *cmd;
-
 	/* Maximum length match */
 	size_t max_matchlen = 0;
 	struct slash_command *max_match_cmd = NULL;
 
-	slash_for_each_command(cmd) {
-
-		/* Skip commands that are longer than linelen */
-		if (linelen < strlen(cmd->name))
-			continue;
+	for (struct slash_command * cmd = slash->cmd_list; cmd; cmd = slash_next_command(cmd)) {
 
 		/* Find an exact match */
 		if (strncmp(line, cmd->name, strlen(cmd->name)) == 0) {
@@ -290,11 +321,8 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 
 				/* Calculate arguments position */
 				*args = line + strlen(cmd->name);
-
 			}
-
 		}
-
 	}
 
 	return max_match_cmd;
@@ -434,10 +462,9 @@ static void slash_complete(struct slash *slash)
 	int matches = 0;
 	size_t prefixlen = -1;
 	struct slash_command *prefix = NULL;
-	struct slash_command *cmd;
 	size_t buffer_len = strlen(slash->buffer);
 
-	slash_for_each_command(cmd) {
+	for (struct slash_command * cmd = slash->cmd_list; cmd; cmd = slash_next_command(cmd)) {
 
 		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), buffer_len)) == 0) {
 
@@ -979,8 +1006,7 @@ static int slash_builtin_help(struct slash *slash)
 
 	/* If no arguments given, just list all top-level commands */
 	if (slash->argc < 2) {
-		struct slash_command *cmd;
-		slash_for_each_command(cmd) {
+    	for (struct slash_command * cmd = slash->cmd_list; cmd; cmd = slash_next_command(cmd)) {
 			slash_command_description(slash, cmd);
 		}
 		return SLASH_SUCCESS;
@@ -1155,6 +1181,9 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
 
+    /* Create command list */
+    slash_command_list_init(slash);
+
 	return slash;
 }
 
@@ -1179,6 +1208,9 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 	slash->history_tail = slash->history;
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
+
+    /* Empty command list */
+    slash->cmd_list = 0;
 }
 
 void slash_destroy(struct slash *slash)
