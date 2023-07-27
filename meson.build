@@ -3,9 +3,15 @@ project('slash', 'c')
 slash_sources = files([
 	'src/slash.c',
 	'src/optparse.c',
-	'src/dflopt.c',
-	'src/run.c',
 	])
+
+if get_option('builtins')
+	slash_sources += files([
+		'src/builtins.c',
+		'src/dflopt.c',
+		'src/run.c',
+	])
+endif
 
 conf = configuration_data()
 if meson.get_compiler('c').has_header('sys/termios.h')
@@ -30,7 +36,7 @@ slash_lib = static_library('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
-	install : false
+	install : false,
 )
 	
 slash_dep = declare_dependency(
