@@ -70,8 +70,8 @@
 	__typeof__ (b) _b = (b); \
 	_a < _b ? _a : _b; })
 
-#define __slash_command(_secname, _ident, _name, _func, _completer, _args, _help) 	\
-	__attribute__((section( #_secname )))\
+#define __slash_command(_ident, _name, _func, _completer, _args, _help) 	\
+	__attribute__((section("slash")))\
 	__attribute__((aligned(4)))\
 	__attribute__((used))\
 	const struct slash_command _ident = {\
@@ -84,51 +84,29 @@
         .line = __LINE__,\
 	};
 
-#define slash_sec_command(_section, _name, _func, _args, _help)\
-	__slash_command(_section, slash_cmd_ ## _name,				\
+#define slash_command(_name, _func, _args, _help)			\
+	__slash_command(slash_cmd_ ## _name,				\
 			#_name, _func, NULL, _args, _help)
 
-#define slash_sec_command_sub(_section, _group, _name, _func, _args, _help)\
-	__slash_command(_section, slash_cmd_##_group ## _ ## _name ,\
+#define slash_command_sub(_group, _name, _func, _args, _help)		\
+	__slash_command(slash_cmd_##_group ## _ ## _name ,		\
 			#_group" "#_name, _func, NULL, _args, _help)
 
-#define slash_sec_command_subsub(_section, _group, _subgroup, _name, _func, _args, _help) \
-	__slash_command(_section, slash_cmd_ ## _group ## _ ## _subgroup ## _name,\
+#define slash_command_subsub(_group, _subgroup, _name, _func, _args, _help) \
+	__slash_command(slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
 			#_group" "#_subgroup" "#_name, _func, NULL, _args, _help)
 
-#define slash_sec_command_completer(_section, _name, _func, _completer, _args, _help)\
-	__slash_command(_section, slash_cmd_ ## _name,\
+#define slash_command_completer(_name, _func, _completer, _args, _help)			\
+	__slash_command(slash_cmd_ ## _name,				\
 			#_name, _func, _completer, _args, _help)
 
-#define slash_sec_command_sub_completer(_section, _group, _name, _func, _completer, _args, _help)\
-	__slash_command(_section, slash_cmd_##_group ## _ ## _name ,\
+#define slash_command_sub_completer(_group, _name, _func, _completer, _args, _help)		\
+	__slash_command(slash_cmd_##_group ## _ ## _name ,		\
 			#_group" "#_name, _func, _completer, _args, _help)
 
-#define slash_sec_command_subsub_completer(_section, _group, _subgroup, _name, _func, _completer, _args, _help)\
-	__slash_command(_section, slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
-			#_group" "#_subgroup" "#_name, _func, _completer, _args, _help)
-
-/* Macros with no section argument that defaults to slash for backwards compatibility,
-   and for use in application. Dynamic libraries used as addin must specify a section name
-   that differ from slash and is unique amonh addins that are used simultaneously.  */
-
-#define slash_command(_name, _func, _args, _help)			\
-	slash_sec_command(slash, _name, _func, _args, _help)
-
-#define slash_command_sub(_group, _name, _func, _args, _help)		\
-	slash_sec_command_sub(slash, _group, _name, _func, _args, _help)
-
-#define slash_command_subsub(_group, _subgroup, _name, _func, _args, _help) \
-	slash_sec_command_subsub(slash, _group, _subgroup, _name, _func, _args, _help)
-
-#define slash_command_completer(_name, _func, _completer, _args, _help)			\
-	slash_sec_command_completer(slash, _name, _func, _completer, _args, _help)
-
-#define slash_command_sub_completer(_group, _name, _func, _completer, _args, _help)		\
-	slash_sec_command_sub_completer(slash, _group, _name, _func, _completer, _args, _help)
-
 #define slash_command_subsub_completer(_group, _subgroup, _name, _func, _completer, _args, _help) \
-	slash_sec_command_subsub_completer(slash, _group, _subgroup, _name, _func, _completer, _args, _help)
+	__slash_command(slash_cmd_ ## _group ## _ ## _subgroup ## _name, \
+			#_group" "#_subgroup" "#_name, _func, _completer, _args, _help)
 
 
 #define slash_command_group(_name, _help)
