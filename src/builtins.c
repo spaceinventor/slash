@@ -7,8 +7,6 @@
 #include <slash/dflopt.h>
 #include <slash/optparse.h>
 
-#include "builtins.h"
-
 /* Declarations for required implementation functions in slash.c */
 void slash_command_usage(struct slash *slash, struct slash_command *command);
 char *slash_history_increment(struct slash *slash, char *ptr);
