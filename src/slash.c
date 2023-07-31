@@ -91,7 +91,8 @@ slash_section_t * slash_section_head = &our_slash_section;
 void slash_init_addin(void * handle) {
 	typedef void (*slash_init_addin_internal_t)(slash_section_t * head_list);
 	slash_init_addin_internal_t init_internal = dlsym(handle, "slash_init_addin_internal");
-	init_internal(&our_slash_section);
+	if (init_internal != NULL)  // Addin does not use slash
+		init_internal(&our_slash_section);
 }
 
 /* "weak" allows library creators to override the default slash_init_addin_internal() function
