@@ -33,25 +33,6 @@
 #include <termios.h>
 #endif
 
-/* Support for merging the contents of the slash section of an addin (plugin)
-   into the list of slash records in the application, like csh. 
-   This must be called once, like where called slash_create. */
-#define SLASH_SECTION_INIT_NO_FUNC(secname)\
-    extern struct slash_command __start_ ## secname;\
-    extern struct slash_command __stop_ ## secname;\
-    __attribute__((unused)) static struct slash_command * slash_section_start = (struct slash_command *)&__start_ ## secname;\
-    __attribute__((unused)) static struct slash_command * slash_section_stop = (struct slash_command *)&__stop_ ## secname;
-
-#define SLASH_SECTION_INIT_FUNC\
-	__attribute__((unused)) void get_slash_pointers(struct slash_command ** start, struct slash_command ** stop) {\
-		*start = slash_section_start;\
-		*stop = slash_section_stop;\
-	}
-
-#define SLASH_SECTION_INIT(secname)\
-	SLASH_SECTION_INIT_NO_FUNC(secname)\
-	SLASH_SECTION_INIT_FUNC
-
 
 /* Helper macros */
 #define slash_offsetof(type, member) ((size_t) &((type *)0)->member)
@@ -79,7 +60,8 @@
 		.func  = _func,\
 		.completer  = _completer,\
 		.args  = _args,\
-        .next = 0,\
+        .next = NULL,  /* Next pointer in case the user wants to implement custom ordering within or across addins.
+							It should not required by the default implementation. */\
         .file = __FILE__,\
         .line = __LINE__,\
 	};
@@ -141,6 +123,8 @@ struct slash_command {
 	const slash_func_t func;
 	const char *args;
 	const slash_completer_func_t completer;
+	/* Next pointer in case the user wants to implement custom ordering within or across addins.
+		It should not required by the default implementation. */
     struct slash_command * next;
 
     const char * file;
@@ -195,15 +179,18 @@ struct slash {
     struct slash_command * cmd_list;
 };
 
+/**
+ * @brief Initializes an addin using slash.
+ * 
+ * @param handle Dynamic linking handle to the addin.
+ */
+void slash_init_addin(void * handle);
+
 struct slash *slash_create(size_t line_size, size_t history_size);
 
 void slash_create_static(struct slash *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size);
 
 void slash_destroy(struct slash *slash);
-
-void slash_command_list_add(struct slash *slash,
-                            struct slash_command * start,
-                            struct slash_command * stop);
 
 char *slash_readline(struct slash *slash);
 

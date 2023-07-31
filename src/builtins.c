@@ -7,14 +7,8 @@
 #include <slash/dflopt.h>
 #include <slash/optparse.h>
 
-/* Declarations for required implementation functions in slash.c */
-void slash_command_usage(struct slash *slash, struct slash_command *command);
-char *slash_history_increment(struct slash *slash, char *ptr);
-int slash_putchar(struct slash *slash, char c);
-struct slash_command * slash_next_command(struct slash_command * cmd);
-struct slash_command *
-slash_command_find(struct slash *slash, char *line, size_t linelen, char **args);
-void slash_command_description(struct slash *slash, struct slash_command *command);
+#include "builtins.h"
+
 
 /* Builtin commands */
 static int slash_builtin_help(struct slash *slash)
@@ -27,7 +21,7 @@ static int slash_builtin_help(struct slash *slash)
 
 	/* If no arguments given, just list all top-level commands */
 	if (slash->argc < 2) {
-    	for (struct slash_command * cmd = slash->cmd_list; cmd; cmd = slash_next_command(cmd)) {
+    	slash_for_each_command(cmd) {
 			slash_command_description(slash, cmd);
 		}
 		return SLASH_SUCCESS;

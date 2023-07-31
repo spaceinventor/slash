@@ -25,6 +25,7 @@
 #include <slash/optparse.h>
 
 
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -47,6 +48,8 @@
 #include <sys/select.h>
 #endif
 
+#include "builtins.h"
+
 /* Configuration */
 #define SLASH_ARG_MAX		16	/* Maximum number of arguments */
 #define SLASH_SHOW_MAX		25	/* Maximum number of commands to list */
@@ -59,16 +62,46 @@
 #define ESCAPE(code) "\x1b[0" code
 #define ESCAPE_NUM(code) "\x1b[%u" code
 
+static void slash_list_add_section(slash_section_t * list_head,
+                            slash_section_t * add_section)
+{
 
-/* Define and initialize section variables */
-SLASH_SECTION_INIT_NO_FUNC(slash)
+	slash_section_t * slash_section_tail = list_head;
 
-//static __attribute__((aligned(1))) const struct slash_command slash_size_dummy[2];
-//#define SLASH_COMMAND_SIZE ((intptr_t) &slash_size_dummy[1] - (intptr_t) &slash_size_dummy[0])
+	while (slash_section_tail->next != NULL)
+		slash_section_tail = slash_section_tail->next;
 
-/* Iteration of command list */
-struct slash_command * slash_next_command(struct slash_command * cmd) {
-    return cmd ? cmd->next : 0;
+	slash_section_tail->next = add_section;
+
+# if 0
+	for	(slash_section_t * section = slash_section_list_head; section != NULL; section = section->next) {
+
+	}
+#endif
+}
+
+slash_section_t our_slash_section = {
+	.section_start = &__start_slash,
+	.section_stop = &__stop_slash,
+	.next = NULL,
+};
+
+slash_section_t * slash_section_head = &our_slash_section;
+
+void slash_init_addin(void * handle) {
+	typedef void (*slash_init_addin_internal_t)(slash_section_t * head_list);
+	slash_init_addin_internal_t init_internal = dlsym(handle, "slash_init_addin_internal");
+	init_internal(&our_slash_section);
+}
+
+/* "weak" allows library creators to override the default slash_init_addin_internal() function
+	simply by creating a function with the same signature. */
+__attribute__((weak))
+__attribute__((used))  // Used when the application (csh) calls for initialization of the addin(s) (slash)
+void slash_init_addin_internal(slash_section_t * head_list) {
+	if (head_list->section_start != &__start_slash) {
+		slash_list_add_section(head_list, &our_slash_section);
+	}
 }
 
 /* Command-line option parsing */
@@ -264,43 +297,6 @@ static bool slash_line_empty(char *line, size_t linelen)
 	return true;
 }
 
-void slash_command_list_add(struct slash *slash,
-                            struct slash_command * start,
-                            struct slash_command * stop)
-{
-
-	for (struct slash_command * cmd = start; cmd < stop; ++cmd) {
-
-        /* cmd->next: first entry  prev: none */
-        cmd->next = slash->cmd_list;
-    	struct slash_command * prev = 0;
-
-        /* As long af cmd->next is alphabetically lower than cmd */
-        while (cmd->next && (strcmp(cmd->name, cmd->next->name) > 0)) {
-            /* cmd->next: next entry  prev: previous entry */
-            prev = cmd->next;
-            cmd->next = cmd->next->next;
-        }
-
-        if (prev) {
-            /* Insert before cmd->next */
-            prev->next = cmd;
-        } else {
-            /* Insert as first entry */
-            slash->cmd_list = cmd;
-        }
-
-	}
-
-}
-
-void slash_command_list_init(struct slash *slash)
-{
-
-    slash->cmd_list = 0;
-	slash_command_list_add(slash, slash_section_start, slash_section_stop);
-
-}
 
 struct slash_command *
 slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
@@ -309,19 +305,19 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 	size_t max_matchlen = 0;
 	struct slash_command *max_match_cmd = NULL;
 
-	for (struct slash_command * cmd = slash->cmd_list; cmd; cmd = slash_next_command(cmd)) {
+	slash_for_each_command(cmd) {
 
 		/* Find an exact match */
-		if (strncmp(line, cmd->name, strlen(cmd->name)) == 0) {
+		if (strncmp(line, cmd->name, strlen(cmd->name)) != 0)
+			continue;
 
-			/* Update the max-length match */
-			if (strlen(cmd->name) > max_matchlen) {
-				max_match_cmd = cmd;
-				max_matchlen = strlen(cmd->name);
+		/* Update the max-length match */
+		if (strlen(cmd->name) > max_matchlen) {
+			max_match_cmd = cmd;
+			max_matchlen = strlen(cmd->name);
 
-				/* Calculate arguments position */
-				*args = line + strlen(cmd->name);
-			}
+			/* Calculate arguments position */
+			*args = line + strlen(cmd->name);
 		}
 	}
 
@@ -464,7 +460,7 @@ static void slash_complete(struct slash *slash)
 	struct slash_command *prefix = NULL;
 	size_t buffer_len = strlen(slash->buffer);
 
-	for (struct slash_command * cmd = slash->cmd_list; cmd; cmd = slash_next_command(cmd)) {
+	slash_for_each_command(cmd) {
 
 		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), buffer_len)) == 0) {
 
@@ -1068,9 +1064,6 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_tail = slash->history;
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
-
-    /* Create command list */
-    slash_command_list_init(slash);
 
 	return slash;
 }
