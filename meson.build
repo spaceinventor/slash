@@ -32,7 +32,7 @@ slash_inc = include_directories('.', 'include')
 
 dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], default_options: ['default_library=static'], required: false)
 	
-slash_lib = static_library('slash',
+slash_lib = library('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
