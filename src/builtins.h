@@ -19,6 +19,7 @@ void slash_command_description(struct slash *slash, struct slash_command *comman
 extern struct slash_command __start_slash __attribute__((visibility("hidden"), weak));
 extern struct slash_command __stop_slash __attribute__((visibility("hidden"), weak));
 
+#ifdef SLASH_USE_LINKED_SECTIONS
 typedef struct slash_section_s {
 	struct slash_command * section_start;
 	struct slash_command * section_stop;
@@ -33,3 +34,4 @@ extern slash_section_t * slash_section_head __attribute__((visibility("hidden"))
 	struct slash_command *_c;\
     for (slash_section_t *section = slash_section_head; section != NULL; section = section->next) \
         for (_c = section->section_stop - 1; _c >= section->section_start; _c--)
+#endif

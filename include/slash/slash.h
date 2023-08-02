@@ -60,7 +60,7 @@
 		.func  = _func,\
 		.completer  = _completer,\
 		.args  = _args,\
-        .next = NULL,  /* Next pointer in case the user wants to implement custom ordering within or across addins.
+        .next = {NULL},  /* Next pointer in case the user wants to implement custom ordering within or across addins.
 							It should not required by the default implementation. */\
         .file = __FILE__,\
         .line = __LINE__,\
@@ -125,7 +125,9 @@ struct slash_command {
 	const slash_completer_func_t completer;
 	/* Next pointer in case the user wants to implement custom ordering within or across addins.
 		It should not required by the default implementation. */
-    struct slash_command * next;
+	/* single linked list:
+	 * The weird definition format comes from sys/queue.h SLINST_ENTRY() macro */
+    struct { struct slash_command *sle_next; } next;
 
     const char * file;
     int line;
@@ -221,5 +223,15 @@ int slash_write(struct slash *slash, const char *buf, size_t count);
 int slash_prompt(struct slash * slash);
 
 int slash_run(struct slash *slash, char * filename, int printcmd);
+
+#ifndef SLASH_USE_LINKED_SECTIONS
+typedef struct slash_list_iterator_s {
+	int phase;							// Hybrid iterator has multiple phases (0 == Static, 1 == Dynamic List)
+	struct slash_command * element;
+} slash_list_iterator;
+
+struct slash_command * slash_list_iterate(slash_list_iterator * iterator);
+int slash_list_add(struct slash_command * item);
+#endif
 
 #endif /* _SLASH_H_ */
