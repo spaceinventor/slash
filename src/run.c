@@ -52,6 +52,7 @@ static int cmd_run(struct slash *slash) {
 	/* Check if name is present */
 	if (++argi >= slash->argc) {
 		printf("missing parameter filename\n");
+        optparse_del(parser);
 		return SLASH_EINVAL;
 	}
 
@@ -59,7 +60,9 @@ static int cmd_run(struct slash *slash) {
 
     printf("Running %s\n", name);
 
-    return slash_run(slash, name, 1);
+    int res = slash_run(slash, name, 1);
+    optparse_del(parser);
+    return res;
 
 }
 
