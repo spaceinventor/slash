@@ -60,10 +60,8 @@
 		.func  = _func,\
 		.completer  = _completer,\
 		.args  = _args,\
-        .next = {NULL},  /* Next pointer in case the user wants to implement custom ordering within or across addins.
+        .next = {NULL},  /* Next pointer in case the user wants to implement custom ordering within or across APMs.
 							It should not required by the default implementation. */\
-        .file = __FILE__,\
-        .line = __LINE__,\
 	};
 
 #define slash_command(_name, _func, _args, _help)			\
@@ -123,14 +121,11 @@ struct slash_command {
 	const slash_func_t func;
 	const char *args;
 	const slash_completer_func_t completer;
-	/* Next pointer in case the user wants to implement custom ordering within or across addins.
+	/* Next pointer in case the user wants to implement custom ordering within or across APMs.
 		It should not required by the default implementation. */
 	/* single linked list:
 	 * The weird definition format comes from sys/queue.h SLINST_ENTRY() macro */
     struct { struct slash_command *sle_next; } next;
-
-    const char * file;
-    int line;
 };
 
 /* Slash context */
@@ -182,11 +177,11 @@ struct slash {
 };
 
 /**
- * @brief Initializes an addin using slash.
+ * @brief Initializes an APM using slash.
  * 
- * @param handle Dynamic linking handle to the addin.
+ * @param handle Dynamic linking handle to the APM.
  */
-void slash_init_addin(void * handle);
+void slash_init_apm(void * handle);
 
 struct slash *slash_create(size_t line_size, size_t history_size);
 

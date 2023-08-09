@@ -21,13 +21,9 @@ static int slash_builtin_help(struct slash *slash)
 
 	/* If no arguments given, just list all top-level commands */
 	if (slash->argc < 2) {
-#ifdef SLASH_USE_LINKED_SECTIONS
-		slash_for_each_command(cmd) {
-#else
 		struct slash_command * cmd;
 		slash_list_iterator i = {};
 		while ((cmd = slash_list_iterate(&i)) != NULL) {
-#endif
 			slash_command_description(slash, cmd);
 		}
 		return SLASH_SUCCESS;

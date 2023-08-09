@@ -62,51 +62,6 @@
 #define ESCAPE(code) "\x1b[0" code
 #define ESCAPE_NUM(code) "\x1b[%u" code
 
-#ifdef SLASH_USE_LINKED_SECTIONS
-static void slash_list_add_section(slash_section_t * list_head,
-                            slash_section_t * add_section)
-{
-
-	slash_section_t * slash_section_tail = list_head;
-
-	while (slash_section_tail->next != NULL)
-		slash_section_tail = slash_section_tail->next;
-
-	slash_section_tail->next = add_section;
-
-# if 0
-	for	(slash_section_t * section = slash_section_list_head; section != NULL; section = section->next) {
-
-	}
-#endif
-}
-
-slash_section_t our_slash_section = {
-	.section_start = &__start_slash,
-	.section_stop = &__stop_slash,
-	.next = NULL,
-};
-
-slash_section_t * slash_section_head = &our_slash_section;
-
-void slash_init_addin(void * handle) {
-	typedef void (*slash_init_addin_internal_t)(slash_section_t * head_list);
-	slash_init_addin_internal_t init_internal = dlsym(handle, "slash_init_addin_internal");
-	if (init_internal != NULL)  // Addin does not use slash
-		init_internal(&our_slash_section);
-}
-
-/* "weak" allows library creators to override the default slash_init_addin_internal() function
-	simply by creating a function with the same signature. */
-__attribute__((weak))
-__attribute__((used))  // Used when the application (csh) calls for initialization of the addin(s) (slash)
-void slash_init_addin_internal(slash_section_t * head_list) {
-	if (head_list->section_start != &__start_slash) {
-		slash_list_add_section(head_list, &our_slash_section);
-	}
-}
-#endif
-
 /* Command-line option parsing */
 int slash_getopt(struct slash *slash, const char *opts)
 {
@@ -308,13 +263,9 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 	size_t max_matchlen = 0;
 	struct slash_command *max_match_cmd = NULL;
 
-#ifdef SLASH_USE_LINKED_SECTIONS
-	slash_for_each_command(cmd) {
-#else
 	struct slash_command * cmd;
 	slash_list_iterator i = {};
 	while ((cmd = slash_list_iterate(&i)) != NULL) {
-#endif
 
 		/* Find an exact match */
 		if (strncmp(line, cmd->name, strlen(cmd->name)) != 0)
@@ -469,13 +420,9 @@ static void slash_complete(struct slash *slash)
 	struct slash_command *prefix = NULL;
 	size_t buffer_len = strlen(slash->buffer);
 
-#ifdef SLASH_USE_LINKED_SECTIONS
-	slash_for_each_command(cmd) {
-#else
 	struct slash_command * cmd;
 	slash_list_iterator i = {};
 	while ((cmd = slash_list_iterate(&i)) != NULL) {
-#endif
 
 		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), buffer_len)) == 0) {
 
