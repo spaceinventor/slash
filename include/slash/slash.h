@@ -219,6 +219,8 @@ int slash_prompt(struct slash * slash);
 
 int slash_run(struct slash *slash, char * filename, int printcmd);
 
+void slash_history_add(struct slash *slash, char *line);
+
 #ifndef SLASH_USE_LINKED_SECTIONS
 typedef struct slash_list_iterator_s {
 	int phase;							// Hybrid iterator has multiple phases (0 == Static, 1 == Dynamic List)
