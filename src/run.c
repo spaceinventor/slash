@@ -30,6 +30,7 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
             printf("  run: %s\n", line);
 
         slash_execute(slash, line);
+        slash_history_add(slash, line);
     }
 
     fclose(stream);

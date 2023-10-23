@@ -613,7 +613,7 @@ static void slash_history_rewind(struct slash *slash, size_t len)
 	slash->history_rewind_length = 0;
 }
 
-static void slash_history_add(struct slash *slash, char *line)
+void slash_history_add(struct slash *slash, char *line)
 {
 	/* Check if we are browsing history and clear latest entry */
 	if (slash->history_depth != 0 && slash->history_rewind_length != 0)
