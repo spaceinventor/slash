@@ -355,6 +355,9 @@ void slash_command_description(struct slash *slash, struct slash_command *comman
 	slash_printf(slash, "%-15s\r\n", command->name);
 }
 
+extern int loki_running;
+void loki_add(char * log, int iscmd);
+
 int slash_execute(struct slash *slash, char *line)
 {
 	struct slash_command *command;
@@ -370,6 +373,16 @@ int slash_execute(struct slash *slash, char *line)
 	if (!command) {
 		slash_printf(slash, "No such command: %s\n", line);
 		return -ENOENT;
+	}
+
+	if(loki_running){
+		int ex_len = strlen(line);
+		char * dup = malloc(ex_len + 2);
+		strncpy(dup, line, ex_len);
+		dup[ex_len] = '\n';
+		dup[ex_len + 1] = '\0';
+		loki_add(dup, 1);
+		free(dup);
 	}
 
 	if (!command->func) {
