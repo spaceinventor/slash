@@ -14,8 +14,8 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
     char line[512];
     while(fgets(line, sizeof(line), stream)) {
         
-        /* Strip newline */
-        line[strcspn(line, "\n")] = 0;
+        /* Strip newline and carriage return */
+        line[strcspn(line, "\n\r")] = 0;
 
         /* Skip short lines */
         if (strlen(line) <= 1)
