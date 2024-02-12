@@ -12,6 +12,7 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
     }
 
     char line[512];
+    int ret = SLASH_SUCCESS;
     while(fgets(line, sizeof(line), stream)) {
         
         /* Strip newline and carriage return */
@@ -29,13 +30,16 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
         if (printcmd)
             printf("  run: %s\n", line);
 
-        slash_execute(slash, line);
+        ret = slash_execute(slash, line);
         slash_history_add(slash, line);
+        if (ret == SLASH_EXIT) {
+            break;
+        }
     }
 
     fclose(stream);
 
-    return SLASH_SUCCESS;
+    return ret;
 
 }
 
