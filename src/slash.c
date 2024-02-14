@@ -825,6 +825,26 @@ static void slash_delete_word(struct slash *slash)
 	slash->length -= erased;
 }
 
+static void next_word(struct slash *slash)
+{
+	if (slash->cursor < slash->length) {
+		bool word_boundary = false;
+		while (++slash->cursor < slash->length) {
+			if (word_boundary) break;
+			if(slash->buffer[slash->cursor] == ' ') {
+				word_boundary = true;
+			}
+		}
+	}
+}
+
+static void previous_word(struct slash *slash)
+{
+	if (slash->cursor > 0) {
+		while(--slash->cursor > 0 && slash->buffer[slash->cursor-1] != ' ');
+	}
+}
+
 static void slash_swap(struct slash *slash)
 {
 	char tmp;
@@ -866,6 +886,22 @@ char *slash_readline(struct slash *slash)
 				esc[2] = slash_getchar(slash);
 				if (esc[1] == '3' && esc[2] == '~')
 					slash_delete(slash);
+				else {
+					if(esc[1] == '1') {
+						if(slash_getchar(slash) == '5') {
+							switch(slash_getchar(slash)) {
+								case 'D':
+									previous_word(slash);
+									break;
+								case 'C':
+									next_word(slash);
+									break;
+								default:
+									break;
+							}
+						}
+					}
+				}
 			} else if (esc[0] == '[' && esc[1] == 'H') {
 				slash->cursor = 0;
 			} else if (esc[0] == '[' && esc[1] == 'F') {
