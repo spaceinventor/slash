@@ -1,11 +1,21 @@
 #include <slash/slash.h>
 #include <slash/optparse.h>
 #include <string.h>
+#include <stdlib.h>
 
 int slash_run(struct slash *slash, char * filename, int printcmd) {
 
+    char filename_local[256];
+    if (filename[0] == '~') {
+        strcpy(filename_local, getenv("HOME"));
+        strcpy(&filename_local[strlen(filename_local)], &filename[1]);
+    }
+    else {
+        strcpy(filename_local, filename);
+    }
+
     /* Read from file */
-	FILE * stream = fopen(filename, "r");
+	FILE * stream = fopen(filename_local, "r");
 	if (stream == NULL) {
         printf("  File %s not found\n", filename);
 		return SLASH_EIO;
