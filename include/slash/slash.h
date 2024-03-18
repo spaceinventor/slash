@@ -60,6 +60,7 @@
 		.func  = _func,\
 		.completer  = _completer,\
 		.args  = _args,\
+		.help = _help, \
         .next = {NULL},  /* Next pointer in case the user wants to implement custom ordering within or across APMs.
 							It should not required by the default implementation. */\
 	};
