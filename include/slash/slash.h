@@ -121,6 +121,7 @@ struct slash_command {
 	char *name;
 	const slash_func_t func;
 	const char *args;
+	const char *help;
 	const slash_completer_func_t completer;
 	/* Next pointer in case the user wants to implement custom ordering within or across APMs.
 		It should not required by the default implementation. */
