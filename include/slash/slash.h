@@ -191,6 +191,17 @@ void slash_destroy(struct slash *slash);
 
 char *slash_readline(struct slash *slash);
 
+/**
+ * @brief Implement this function to do something with the current line (logging, etc)
+ * 
+ * @warning the current __attribute__((weak)) implementation performs the LOKI logging
+ * temporarily, this behaviour WILL be removed, leaving it up to slash-users (mainly (only?) CSH)
+ * to provide this implementation
+ * 
+ * @param line the slash line about to be executed
+ */
+void slash_on_execute_hook(const char *line);
+
 int slash_execute(struct slash *slash, char *line);
 
 int slash_loop(struct slash *slash);
@@ -215,6 +226,13 @@ int slash_refresh(struct slash *slash, int printtime);
 
 int slash_write(struct slash *slash, const char *buf, size_t count);
 
+/**
+ * @brief Implement this function to create a custom prompt
+ * 
+ * A default no-prompt implementation is provided as a __attribute__((weak))
+ * 
+ * @return length of the custom prompt
+ */
 int slash_prompt(struct slash * slash);
 
 int slash_run(struct slash *slash, char * filename, int printcmd);
