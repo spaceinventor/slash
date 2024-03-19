@@ -355,8 +355,35 @@ void slash_command_description(struct slash *slash, struct slash_command *comman
 	slash_printf(slash, "%-15s\r\n", command->name);
 }
 
-extern int loki_running;
-void loki_add(char * log, int iscmd);
+
+
+/* TODO: remove this line from Slash when warning period has expired */
+__attribute__((weak)) void loki_add(char * log, int iscmd) {}
+/* TODO: remove this line from Slash when warning period has expired */
+__attribute__((weak)) int loki_running = 0;
+
+/* Implement this function to perform logging for example */
+__attribute__((weak)) void slash_on_execute_hook(const char *line) {
+/* TODO: remove all code from this function when warning period has expired */
+#pragma GCC warning "Default implementation of LOKI logging in slash is temporary and will be removed"
+#pragma GCC warning "Please update code using slash to provide an appropriate implementation of slash_on_execute_hook()"
+	extern int loki_running;
+	extern void loki_add(char * log, int iscmd);
+	if(loki_running){
+		int ex_len = strlen(line);
+		char * dup = malloc(ex_len + 2);
+		strncpy(dup, line, ex_len);
+		dup[ex_len] = '\n';
+		dup[ex_len + 1] = '\0';
+		loki_add(dup, 1);
+		free(dup);
+	}
+}
+
+/* A default no-prompt implementation is provided as a __attribute__((weak)) */
+__attribute__((weak)) int slash_prompt(struct slash *slash) {
+	return 0;
+}
 
 int slash_execute(struct slash *slash, char *line)
 {
@@ -375,15 +402,8 @@ int slash_execute(struct slash *slash, char *line)
 		return -ENOENT;
 	}
 
-	if(loki_running){
-		int ex_len = strlen(line);
-		char * dup = malloc(ex_len + 2);
-		strncpy(dup, line, ex_len);
-		dup[ex_len] = '\n';
-		dup[ex_len + 1] = '\0';
-		loki_add(dup, 1);
-		free(dup);
-	}
+	/* Implement this function to perform logging for example */
+	slash_on_execute_hook(line);
 
 	if (!command->func) {
 		return -EINVAL;
