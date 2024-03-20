@@ -6,6 +6,7 @@
 #include <slash/slash.h>
 #include <slash/dflopt.h>
 #include <slash/optparse.h>
+#include <slash/completer.h>
 
 #include "builtins.h"
 
@@ -50,7 +51,7 @@ static int slash_builtin_help(struct slash *slash)
 slash_command(help, slash_builtin_help, "[command]",
 	      "Show available commands");
 
-          static int slash_builtin_history(struct slash *slash)
+static int slash_builtin_history(struct slash *slash)
 {
 	char *p = slash->history_head;
 
@@ -128,4 +129,4 @@ static int slash_builtin_watch(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command(watch, slash_builtin_watch, "<command...>", "Repeat a command");
+slash_command_completer(watch, slash_builtin_watch, slash_watch_completer, "<command...>", "Repeat a command")

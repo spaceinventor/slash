@@ -9,6 +9,7 @@ slash_sources = files([
 if get_option('builtins')
 	slash_sources += files([
 		'src/builtins.c',
+	    'src/completer.c',
 		'src/dflopt.c',
 		'src/run.c',
 	])

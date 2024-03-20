@@ -235,6 +235,8 @@ int slash_write(struct slash *slash, const char *buf, size_t count);
  */
 int slash_prompt(struct slash * slash);
 
+void slash_command_description(struct slash *slash, struct slash_command *command);
+
 int slash_run(struct slash *slash, char * filename, int printcmd);
 
 void slash_history_add(struct slash *slash, char *line);

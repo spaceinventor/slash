@@ -1,4 +1,5 @@
 #include <slash/slash.h>
+#include <slash/completer.h>
 #include <slash/optparse.h>
 #include <string.h>
 #include <stdlib.h>
@@ -80,6 +81,5 @@ static int cmd_run(struct slash *slash) {
     return res;
 
 }
-
-slash_command(run, cmd_run, "<file>", NULL);
+slash_command_completer(run, cmd_run, slash_path_completer, "<file>", "Runs commands in specified file");
 	
