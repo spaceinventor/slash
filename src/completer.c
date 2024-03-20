@@ -232,10 +232,10 @@ void slash_path_completer(struct slash * slash, char * token) {
     /* handle home shortcut (~) and subdirectories in token */
     int subdir_idx = last_char_occ(token, '/');
     if (token[0] == '~') {
+        memset(cwd_buf, '\0', 256);
         strcpy(cwd_buf, getenv("HOME"));
-        strcpy(&cwd_buf[strlen(cwd_buf)], &token[1]);
-    } 
-    if (subdir_idx != -1) {
+        strncpy(&cwd_buf[strlen(cwd_buf)], &token[1], subdir_idx);
+    } else if (subdir_idx != -1) {
         strcat(cwd_buf, "/");
         strncat(cwd_buf, token, subdir_idx);
     }
