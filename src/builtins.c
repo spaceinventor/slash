@@ -80,6 +80,22 @@ void slash_require_activation(struct slash *slash, bool activate)
 	slash->use_activate = activate;
 }
 
+static int slash_builtin_confirm(struct slash *slash) {
+	optparse_t * parser = optparse_new("confirm", "[]");
+	optparse_add_help(parser);
+
+	printf("Confirm: Type 'yes' or 'y' + enter to continue:\n");
+	char * c = slash_readline(slash);
+	if (strcasecmp(c, "yes") == 0 || strcasecmp(c, "y") == 0) {
+		optparse_del(parser);
+		return SLASH_SUCCESS;
+	} else {
+		optparse_del(parser);
+		return SLASH_EBREAK;
+	}
+}
+slash_command(confirm, slash_builtin_confirm, "", "Block until user confirmation");
+
 static int slash_builtin_watch(struct slash *slash)
 {
 

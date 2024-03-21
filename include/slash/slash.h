@@ -113,6 +113,7 @@ typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 #define SLASH_EIO	(-4)
 #define SLASH_ENOMEM	(-5)
 #define SLASH_ENOENT	(-6)
+#define SLASH_EBREAK	(-7)
 
 /* Command struct */
 struct slash_command {

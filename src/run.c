@@ -43,7 +43,7 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
 
         ret = slash_execute(slash, line);
         slash_history_add(slash, line);
-        if (ret == SLASH_EXIT) {
+        if (ret == SLASH_EXIT || ret == SLASH_EBREAK) {
             break;
         }
     }
