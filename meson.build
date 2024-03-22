@@ -2,6 +2,7 @@ project('slash', 'c')
 
 slash_sources = files([
 	'src/slash.c',
+	'src/completer.c',
 	'src/optparse.c',
 	'src/slash_list.c',
 	])
