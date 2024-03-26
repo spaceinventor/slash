@@ -1020,6 +1020,8 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
 
+	slash_list_init();
+
 	return slash;
 }
 

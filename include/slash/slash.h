@@ -242,14 +242,12 @@ int slash_run(struct slash *slash, char * filename, int printcmd);
 
 void slash_history_add(struct slash *slash, char *line);
 
-#ifndef SLASH_USE_LINKED_SECTIONS
 typedef struct slash_list_iterator_s {
-	int phase;							// Hybrid iterator has multiple phases (0 == Static, 1 == Dynamic List)
 	struct slash_command * element;
 } slash_list_iterator;
 
 struct slash_command * slash_list_iterate(slash_list_iterator * iterator);
 int slash_list_add(struct slash_command * item);
-#endif
+int slash_list_init();
 
 #endif /* _SLASH_H_ */
