@@ -50,6 +50,8 @@ int slash_list_add(struct slash_command * item) {
 
 	struct slash_command * cmd;
 	if ((cmd = slash_list_find_name(item->name)) != NULL) {
+		SLIST_REMOVE(&slash_list_head, item, slash_command, next);
+		SLIST_INSERT_HEAD(&slash_list_head, item, next);
 		return 1;
 	} else {
 		SLIST_INSERT_HEAD(&slash_list_head, item, next);
