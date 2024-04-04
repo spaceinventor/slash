@@ -140,10 +140,12 @@ void slash_complete(struct slash *slash)
 	
 	struct slash_command * cmd;
 	slash_list_iterator i = {};
-	while ((cmd = slash_list_iterate(&i)) != NULL) {
+    	while ((cmd = slash_list_iterate(&i)) != NULL) {
 
-		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), slash->length)) == 0) {
-
+        if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), slash->length)) == 0) {
+            if(strlen(cmd->name) < slash->length && slash->buffer[slash->length - 1] != ' ') {
+                continue;
+            }
 			/* Count matches */
 			matches++;
 
@@ -185,7 +187,7 @@ void slash_complete(struct slash *slash)
 	} else if (slash->last_char != '\t') {
 		/* Print the first match as well */
 		slash_command_description(slash, prefix);
-		strncpy(slash->buffer, prefix->name, prefixlen);
+ 		strncpy(slash->buffer, prefix->name, prefixlen);
 		slash->buffer[prefixlen] = '\0';
 		slash->cursor = slash->length = strlen(slash->buffer);
 		slash_bell(slash);
