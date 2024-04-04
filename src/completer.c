@@ -148,17 +148,21 @@ void slash_complete(struct slash *slash)
                 if (NULL == prefix) {
                     /* Count matches */
                     matches++;
+                    slash->in_completion = true;
                     prefix = cmd;
                     if (matches == 1)
                         slash_printf(slash, "\n");
                 }
                 continue;
             }
-            if(strlen(cmd->name) < (slash->length - 1) && slash->buffer[slash->length - 1] == ' ') {
-                continue;
+            if(false == slash->in_completion) {
+                if(strlen(cmd->name) < (slash->length - 1) && slash->buffer[slash->length - 1] == ' ') {
+                    continue;
+                }
             }
             /* Count matches */
             matches++;
+            slash->in_completion = true;
 			/* Find common prefix */
 			if (prefixlen == (size_t) -1) {
 				prefix = cmd;
@@ -182,6 +186,7 @@ void slash_complete(struct slash *slash)
 	}
 
 	if (!matches) {
+        slash->in_completion = false;
 		slash_bell(slash);
 	} else if (matches == 1) {        
 		if (prefixlen != -1) { 
@@ -200,7 +205,7 @@ void slash_complete(struct slash *slash)
 				prefix->completer(slash, slash->buffer + strlen(prefix->name) + 1);
 			}
 		}
-	} else if (slash->last_char != '\t' || slash->last_char != ' ') {
+	} else if (slash->last_char != '\t') {
 		/* Print the first match as well */
 		slash_command_description(slash, prefix);
  		strncpy(slash->buffer, prefix->name, prefixlen);
