@@ -1049,6 +1049,9 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 
     /* Empty command list */
     slash->cmd_list = 0;
+
+	slash->in_completion = false;
+
 }
 
 void slash_destroy(struct slash *slash)

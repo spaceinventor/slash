@@ -140,13 +140,29 @@ void slash_complete(struct slash *slash)
 	
 	struct slash_command * cmd;
 	slash_list_iterator i = {};
-	while ((cmd = slash_list_iterate(&i)) != NULL) {
+    	while ((cmd = slash_list_iterate(&i)) != NULL) {
 
-		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), slash->length)) == 0) {
+        if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), slash->length)) == 0) {
 
-			/* Count matches */
-			matches++;
-
+            if(strlen(cmd->name) < slash->length && slash->buffer[slash->length - 1] != ' ') {
+                if (NULL == prefix) {
+                    /* Count matches */
+                    matches++;
+                    slash->in_completion = true;
+                    prefix = cmd;
+                    if (matches == 1)
+                        slash_printf(slash, "\n");
+                }
+                continue;
+            }
+            if(false == slash->in_completion) {
+                if(strlen(cmd->name) < (slash->length - 1) && slash->buffer[slash->length - 1] == ' ') {
+                    continue;
+                }
+            }
+            /* Count matches */
+            matches++;
+            slash->in_completion = true;
 			/* Find common prefix */
 			if (prefixlen == (size_t) -1) {
 				prefix = cmd;
@@ -170,22 +186,29 @@ void slash_complete(struct slash *slash)
 	}
 
 	if (!matches) {
+        slash->in_completion = false;
 		slash_bell(slash);
-	} else if (matches == 1) {
-		if (slash->cursor <= prefixlen) {
-			strncpy(slash->buffer, prefix->name, prefixlen);
-			slash->buffer[prefixlen] = '\0';
-			strcat(slash->buffer, " ");
-			slash->cursor = slash->length = strlen(slash->buffer);
+	} else if (matches == 1) {        
+		if (prefixlen != -1) { 
+            if (slash->cursor <= prefixlen) {
+                strncpy(slash->buffer, prefix->name, prefixlen);
+                slash->buffer[prefixlen] = '\0';
+                strcat(slash->buffer, " ");
+                slash->cursor = slash->length = strlen(slash->buffer);
+            } else {
+                if (prefix->completer) {
+                    prefix->completer(slash, slash->buffer + prefixlen + 1);
+                }
+            }
 		} else {
 			if (prefix->completer) {
-				prefix->completer(slash, slash->buffer + prefixlen + 1);
+				prefix->completer(slash, slash->buffer + strlen(prefix->name) + 1);
 			}
 		}
 	} else if (slash->last_char != '\t') {
 		/* Print the first match as well */
 		slash_command_description(slash, prefix);
-		strncpy(slash->buffer, prefix->name, prefixlen);
+ 		strncpy(slash->buffer, prefix->name, prefixlen);
 		slash->buffer[prefixlen] = '\0';
 		slash->cursor = slash->length = strlen(slash->buffer);
 		slash_bell(slash);

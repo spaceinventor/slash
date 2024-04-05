@@ -175,6 +175,9 @@ struct slash {
 
     /* Command list */
     struct slash_command * cmd_list;
+
+	/* Completions */
+	bool in_completion;
 };
 
 /**
