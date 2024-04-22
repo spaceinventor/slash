@@ -316,8 +316,8 @@ void slash_path_completer(struct slash * slash, char * token) {
             slash->length = (token - slash->buffer) + strlen(token);
             slash->cursor = slash->length;
             break;
-        
-        default:
+
+        default: {
             int prefix_idx = common_prefix_idx(match_list, match_count);
 
             strncpy(token+subdir_idx+1, match_list[0], prefix_idx);
@@ -326,10 +326,11 @@ void slash_path_completer(struct slash * slash, char * token) {
             slash->cursor = slash->length;
             ls_appended(token, "* -d");
             break;
+        }
     }
 
     slash_completer_revert_skip(slash, orig_slash_buffer);
-    
+
     closedir(cwd_ptr);
 
     /* free all memory allocated for string matches */
