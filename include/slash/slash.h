@@ -198,10 +198,6 @@ char *slash_readline(struct slash *slash);
 /**
  * @brief Implement this function to do something with the current line (logging, etc)
  * 
- * @warning the current __attribute__((weak)) implementation performs the LOKI logging
- * temporarily, this behaviour WILL be removed, leaving it up to slash-users (mainly (only?) CSH)
- * to provide this implementation
- * 
  * @param line the slash line about to be executed
  */
 void slash_on_execute_hook(const char *line);
