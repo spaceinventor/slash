@@ -1036,6 +1036,8 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 
 void slash_destroy(struct slash *slash)
 {
+	slash_restore_term(slash);
+
 	if (slash->buffer) {
 		free(slash->buffer);
 		slash->buffer = NULL;
