@@ -1002,6 +1002,12 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 
 	slash_list_init();
 
+	if (tcgetattr(slash->fd_read, &slash->original) < 0) {
+		free(slash->buffer);
+		free(slash);
+		return NULL;
+	}
+
 	return slash;
 }
 
@@ -1032,6 +1038,7 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 
 	slash->in_completion = false;
 
+	tcgetattr(slash->fd_read, &slash->original);
 }
 
 void slash_destroy(struct slash *slash)
