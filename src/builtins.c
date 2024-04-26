@@ -12,7 +12,7 @@
 
 
 /* Builtin commands */
-static int slash_builtin_help(struct slash *slash)
+static int slash_builtin_help(slash_t *slash)
 {
 	char *args;
 	char find[slash->line_size];
@@ -51,7 +51,7 @@ static int slash_builtin_help(struct slash *slash)
 slash_command(help, slash_builtin_help, "[command]",
 	      "Show available commands");
 
-static int slash_builtin_history(struct slash *slash)
+static int slash_builtin_history(slash_t *slash)
 {
 	char *p = slash->history_head;
 
@@ -66,7 +66,7 @@ slash_command(history, slash_builtin_history, NULL,
 	      "Show previous commands");
 
 #ifndef SLASH_NO_EXIT
-static int slash_builtin_exit(struct slash *slash)
+static int slash_builtin_exit(slash_t *slash)
 {
 	(void)slash;
 	return SLASH_EXIT;
@@ -75,12 +75,12 @@ slash_command(exit, slash_builtin_exit, NULL,
 	      "Exit application");
 #endif
 
-void slash_require_activation(struct slash *slash, bool activate)
+void slash_require_activation(slash_t *slash, bool activate)
 {
 	slash->use_activate = activate;
 }
 
-static int slash_builtin_confirm(struct slash *slash) {
+static int slash_builtin_confirm(slash_t *slash) {
 	optparse_t * parser = optparse_new("confirm", "[]");
 	optparse_add_help(parser);
 
@@ -96,7 +96,7 @@ static int slash_builtin_confirm(struct slash *slash) {
 }
 slash_command(confirm, slash_builtin_confirm, "", "Block until user confirmation");
 
-static int slash_builtin_watch(struct slash *slash)
+static int slash_builtin_watch(slash_t *slash)
 {
 
 	unsigned int interval = slash_dfl_timeout;

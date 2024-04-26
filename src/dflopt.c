@@ -5,7 +5,7 @@
 unsigned int slash_dfl_node = 0;
 unsigned int slash_dfl_timeout = 1000;
 
-static int cmd_node(struct slash *slash) {
+static int cmd_node(slash_t *slash) {
 
 	if (slash->argc < 1) {
 		/* Only print node when explicitly asked,
@@ -28,7 +28,7 @@ static int cmd_node(struct slash *slash) {
 slash_command(node, cmd_node, "[node]", "Set global default node");
 
 
-static int cmd_timeout(struct slash *slash) {
+static int cmd_timeout(slash_t *slash) {
 
 	if (slash->argc == 2) {
 		slash_dfl_timeout = atoi(slash->argv[1]);

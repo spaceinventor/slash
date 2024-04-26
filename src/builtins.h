@@ -4,11 +4,11 @@
 #include <sys/types.h>
 
 /* Declarations for required implementation functions in slash.c */
-void slash_command_usage(struct slash *slash, struct slash_command *command);
-char *slash_history_increment(struct slash *slash, char *ptr);
-int slash_putchar(struct slash *slash, char c);
-struct slash_command * slash_command_find(struct slash *slash, char *line, size_t linelen, char **args);
-void slash_command_description(struct slash *slash, struct slash_command *command);
+void slash_command_usage(slash_t *slash, struct slash_command *command);
+char *slash_history_increment(slash_t *slash, char *ptr);
+int slash_putchar(slash_t *slash, char c);
+struct slash_command * slash_command_find(slash_t *slash, char *line, size_t linelen, char **args);
+void slash_command_description(slash_t *slash, struct slash_command *command);
 
 /* Define and initialize section variables */
 /* __attribute__((visibility("hidden"))) prevents the section symbols from linking with

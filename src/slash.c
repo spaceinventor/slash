@@ -63,7 +63,7 @@
 #define ESCAPE_NUM(code) "\x1b[%u" code
 
 /* Command-line option parsing */
-int slash_getopt(struct slash *slash, const char *opts)
+int slash_getopt(slash_t *slash, const char *opts)
 {
 	/* From "public domain AT&T getopt source" newsgroup posting */
 	int c;
@@ -113,7 +113,7 @@ int slash_getopt(struct slash *slash, const char *opts)
 	return c;
 }
 
-static int slash_rawmode_enable(struct slash *slash)
+static int slash_rawmode_enable(slash_t *slash)
 {
 #ifdef SLASH_HAVE_TERMIOS_H
 	struct termios raw;
@@ -133,7 +133,7 @@ static int slash_rawmode_enable(struct slash *slash)
 	return 0;
 }
 
-static int slash_rawmode_disable(struct slash *slash)
+static int slash_rawmode_disable(slash_t *slash)
 {
 #ifdef SLASH_HAVE_TERMIOS_H
 	if (tcsetattr(slash->fd_read, TCSANOW, &slash->original) < 0)
@@ -142,7 +142,7 @@ static int slash_rawmode_disable(struct slash *slash)
 	return 0;
 }
 
-static int slash_configure_term(struct slash *slash)
+static int slash_configure_term(slash_t *slash)
 {
 	if (slash_rawmode_enable(slash) < 0)
 		return -ENOTTY;
@@ -150,7 +150,7 @@ static int slash_configure_term(struct slash *slash)
 	return 0;
 }
 
-static int slash_restore_term(struct slash *slash)
+static int slash_restore_term(slash_t *slash)
 {
 	if (slash_rawmode_disable(slash) < 0)
 		return -ENOTTY;
@@ -158,22 +158,22 @@ static int slash_restore_term(struct slash *slash)
 	return 0;
 }
 
-int slash_write(struct slash *slash, const char *buf, size_t count)
+int slash_write(slash_t *slash, const char *buf, size_t count)
 {
 	return write(slash->fd_write, buf, count);
 }
 
-static int slash_read(struct slash *slash, void *buf, size_t count)
+static int slash_read(slash_t *slash, void *buf, size_t count)
 {
 	return read(slash->fd_read, buf, count);
 }
 
-int slash_putchar(struct slash *slash, char c)
+int slash_putchar(slash_t *slash, char c)
 {
 	return slash_write(slash, &c, 1);
 }
 
-static int slash_getchar(struct slash *slash)
+static int slash_getchar(slash_t *slash)
 {
 	unsigned char c;
 
@@ -191,7 +191,7 @@ static int slash_wait_select(void *slashp, unsigned int ms)
 	char c;
 	fd_set fds;
 	struct timeval timeout;
-	struct slash * slash = (struct slash *) slashp;
+	slash_t * slash = (slash_t *) slashp;
 
 	timeout.tv_sec = ms / 1000;
 	timeout.tv_usec = (ms % 1000) * 1000;
@@ -213,13 +213,13 @@ static int slash_wait_select(void *slashp, unsigned int ms)
 }
 #endif
 
-int slash_set_wait_interruptible(struct slash *slash, slash_waitfunc_t waitfunc)
+int slash_set_wait_interruptible(slash_t *slash, slash_waitfunc_t waitfunc)
 {
 	slash->waitfunc = waitfunc;
 	return 0;
 }
 
-int slash_wait_interruptible(struct slash *slash, unsigned int ms)
+int slash_wait_interruptible(slash_t *slash, unsigned int ms)
 {
 	if (slash->waitfunc)
 		return slash->waitfunc(slash, ms);
@@ -227,7 +227,7 @@ int slash_wait_interruptible(struct slash *slash, unsigned int ms)
 	return -ENOSYS;
 }
 
-int slash_printf(struct slash *slash, const char *format, ...)
+int slash_printf(slash_t *slash, const char *format, ...)
 {
 	int ret;
 	va_list args;
@@ -241,7 +241,7 @@ int slash_printf(struct slash *slash, const char *format, ...)
 	return ret;
 }
 
-void slash_bell(struct slash *slash)
+void slash_bell(slash_t *slash)
 {
 	slash_putchar(slash, '\a');
 }
@@ -257,7 +257,7 @@ static bool slash_line_empty(char *line, size_t linelen)
 
 
 struct slash_command *
-slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
+slash_command_find(slash_t *slash, char *line, size_t linelen, char **args)
 {
 	/* Maximum length match */
 	size_t max_matchlen = 0;
@@ -343,14 +343,14 @@ static int slash_build_args(char *args, char **argv, int *argc)
 	return 0;
 }
 
-void slash_command_usage(struct slash *slash, struct slash_command *command)
+void slash_command_usage(slash_t *slash, struct slash_command *command)
 {
 	const char *args = command->args ? command->args : "";
 	const char *type = command->func ? "usage" : "group";
 	slash_printf(slash, "%s: %s %s\n", type, command->name, args);
 }
 
-void slash_command_description(struct slash *slash, struct slash_command *command)
+void slash_command_description(slash_t *slash, struct slash_command *command)
 {
 	slash_printf(slash, "%-15s\r\n", command->name);
 }
@@ -361,11 +361,11 @@ __attribute__((weak)) void slash_on_execute_hook(const char *line) {
 }
 
 /* A default no-prompt implementation is provided as a __attribute__((weak)) */
-__attribute__((weak)) int slash_prompt(struct slash *slash) {
+__attribute__((weak)) int slash_prompt(slash_t *slash) {
 	return 0;
 }
 
-int slash_execute(struct slash *slash, char *line)
+int slash_execute(slash_t *slash, char *line)
 {
 	struct slash_command *command;
 	char *args, *argv[SLASH_ARG_MAX];
@@ -413,42 +413,42 @@ int slash_execute(struct slash *slash, char *line)
 }
 
 /* History */
-char *slash_history_increment(struct slash *slash, char *ptr)
+char *slash_history_increment(slash_t *slash, char *ptr)
 {
 	if (++ptr > &slash->history[slash->history_size-1])
 		ptr = slash->history;
 	return ptr;
 }
 
-static char *slash_history_decrement(struct slash *slash, char *ptr)
+static char *slash_history_decrement(slash_t *slash, char *ptr)
 {
 	if (--ptr < slash->history)
 		ptr = &slash->history[slash->history_size-1];
 	return ptr;
 }
 
-static void slash_history_push_head(struct slash *slash)
+static void slash_history_push_head(slash_t *slash)
 {
 	*slash->history_head = '\0';
 	slash->history_head = slash_history_increment(slash, slash->history_head);
 	slash->history_avail++;
 }
 
-static void slash_history_push_tail(struct slash *slash, char c)
+static void slash_history_push_tail(slash_t *slash, char c)
 {
 	*slash->history_tail = c;
 	slash->history_tail = slash_history_increment(slash, slash->history_tail);
 	slash->history_avail--;
 }
 
-static void slash_history_pull_tail(struct slash *slash)
+static void slash_history_pull_tail(slash_t *slash)
 {
 	*slash->history_tail = '\0';
 	slash->history_tail = slash_history_decrement(slash, slash->history_tail);
 	slash->history_avail++;
 }
 
-static size_t slash_history_strlen(struct slash *slash, char *ptr)
+static size_t slash_history_strlen(slash_t *slash, char *ptr)
 {
 	size_t len = 0;
 
@@ -460,7 +460,7 @@ static size_t slash_history_strlen(struct slash *slash, char *ptr)
 	return len;
 }
 
-static void slash_history_copy(struct slash *slash, char *dst, char *src, size_t len)
+static void slash_history_copy(slash_t *slash, char *dst, char *src, size_t len)
 {
 	while (len--) {
 		*dst++ = *src;
@@ -468,7 +468,7 @@ static void slash_history_copy(struct slash *slash, char *dst, char *src, size_t
 	}
 }
 
-static char *slash_history_search_back(struct slash *slash,
+static char *slash_history_search_back(slash_t *slash,
 				       char *start, size_t *startlen)
 {
 	if (slash->history_cursor == slash->history_head)
@@ -493,7 +493,7 @@ static char *slash_history_search_back(struct slash *slash,
 	return start;
 }
 
-static char *slash_history_search_forward(struct slash *slash,
+static char *slash_history_search_forward(slash_t *slash,
 					  char *start, size_t *startlen)
 {
 	if (slash->history_cursor == slash->history_tail)
@@ -516,7 +516,7 @@ static char *slash_history_search_forward(struct slash *slash,
 	return start;
 }
 
-static void slash_history_pull(struct slash *slash, size_t len)
+static void slash_history_pull(slash_t *slash, size_t len)
 {
 	while (len-- > 0)
 		slash_history_push_head(slash);
@@ -527,7 +527,7 @@ static void slash_history_pull(struct slash *slash, size_t len)
 	slash_history_push_head(slash);
 }
 
-static void slash_history_push(struct slash *slash, char *buf, size_t len)
+static void slash_history_push(slash_t *slash, char *buf, size_t len)
 {
 	/* Remove oldest entry until space is available */
 	if (len > slash->history_avail)
@@ -540,7 +540,7 @@ static void slash_history_push(struct slash *slash, char *buf, size_t len)
 	slash->history_cursor = slash->history_tail;
 }
 
-static void slash_history_rewind(struct slash *slash, size_t len)
+static void slash_history_rewind(slash_t *slash, size_t len)
 {
 	while (len-- > 0)
 		slash_history_pull_tail(slash);
@@ -550,7 +550,7 @@ static void slash_history_rewind(struct slash *slash, size_t len)
 	slash->history_rewind_length = 0;
 }
 
-void slash_history_add(struct slash *slash, char *line)
+void slash_history_add(slash_t *slash, char *line)
 {
 	/* Check if we are browsing history and clear latest entry */
 	if (slash->history_depth != 0 && slash->history_rewind_length != 0)
@@ -572,7 +572,7 @@ void slash_history_add(struct slash *slash, char *line)
 		slash_history_push(slash, line, strlen(line) + 1);
 }
 
-static void slash_history_next(struct slash *slash)
+static void slash_history_next(slash_t *slash)
 {
 	char *src;
 	size_t srclen;
@@ -592,7 +592,7 @@ static void slash_history_next(struct slash *slash)
 		slash_history_rewind(slash, slash->history_rewind_length);
 }
 
-static void slash_history_previous(struct slash *slash)
+static void slash_history_previous(slash_t *slash)
 {
 	char *src;
 	size_t srclen, buflen;
@@ -616,7 +616,7 @@ static void slash_history_previous(struct slash *slash)
 }
 
 /* Line editing */
-static void slash_insert(struct slash *slash, int c)
+static void slash_insert(slash_t *slash, int c)
 {
 	if (slash->length + 1 < slash->line_size) {
 		memmove(&slash->buffer[slash->cursor + 1],
@@ -629,7 +629,7 @@ static void slash_insert(struct slash *slash, int c)
 	}
 }
 
-int slash_refresh(struct slash *slash, int printtime)
+int slash_refresh(slash_t *slash, int printtime)
 {
 	char esc[16];
 
@@ -678,36 +678,36 @@ int slash_refresh(struct slash *slash, int printtime)
 	return 0;
 }
 
-static void slash_reset(struct slash *slash)
+static void slash_reset(slash_t *slash)
 {
 	slash->buffer[0] = '\0';
 	slash->length = 0;
 	slash->cursor = 0;
 }
 
-static void slash_arrow_up(struct slash *slash)
+static void slash_arrow_up(slash_t *slash)
 {
 	slash_history_previous(slash);
 }
 
-static void slash_arrow_down(struct slash *slash)
+static void slash_arrow_down(slash_t *slash)
 {
 	slash_history_next(slash);
 }
 
-static void slash_arrow_right(struct slash *slash)
+static void slash_arrow_right(slash_t *slash)
 {
 	if (slash->cursor < slash->length)
 		slash->cursor++;
 }
 
-static void slash_arrow_left(struct slash *slash)
+static void slash_arrow_left(slash_t *slash)
 {
 	if (slash->cursor > 0)
 		slash->cursor--;
 }
 
-static void slash_delete(struct slash *slash)
+static void slash_delete(slash_t *slash)
 {
 	if (slash->cursor < slash->length) {
 		slash->length--;
@@ -717,13 +717,13 @@ static void slash_delete(struct slash *slash)
 	}
 }
 
-void slash_clear_screen(struct slash *slash)
+void slash_clear_screen(slash_t *slash)
 {
 	const char *esc = ESCAPE("H") ESCAPE("2J");
 	slash_write(slash, esc, strlen(esc));
 }
 
-static void slash_backspace(struct slash *slash)
+static void slash_backspace(slash_t *slash)
 {
 	if (slash->cursor > 0) {
 		slash->cursor--;
@@ -734,7 +734,7 @@ static void slash_backspace(struct slash *slash)
 	}
 }
 
-static void slash_delete_word(struct slash *slash)
+static void slash_delete_word(slash_t *slash)
 {
 	int old_cursor = slash->cursor, erased;
 
@@ -749,7 +749,7 @@ static void slash_delete_word(struct slash *slash)
 	slash->length -= erased;
 }
 
-static void next_word(struct slash *slash)
+static void next_word(slash_t *slash)
 {
 	if (slash->cursor < slash->length) {
 		bool word_boundary = false;
@@ -762,14 +762,14 @@ static void next_word(struct slash *slash)
 	}
 }
 
-static void previous_word(struct slash *slash)
+static void previous_word(slash_t *slash)
 {
 	if (slash->cursor > 0) {
 		while(--slash->cursor > 0 && slash->buffer[slash->cursor-1] != ' ');
 	}
 }
 
-static void slash_swap(struct slash *slash)
+static void slash_swap(slash_t *slash)
 {
 	char tmp;
 
@@ -782,7 +782,7 @@ static void slash_swap(struct slash *slash)
 	}
 }
 #include <stdlib.h>
-char *slash_readline(struct slash *slash)
+char *slash_readline(slash_t *slash)
 {
 	char *ret = slash->buffer;
 	int c, esc[3];
@@ -933,7 +933,7 @@ char *slash_readline(struct slash *slash)
 
 
 /* Core */
-int slash_loop(struct slash *slash)
+int slash_loop(slash_t *slash)
 {
 	int c, ret;
 	char *line;
@@ -962,9 +962,9 @@ int slash_loop(struct slash *slash)
 	return 0;
 }
 
-struct slash *slash_create(size_t line_size, size_t history_size)
+slash_t *slash_create(size_t line_size, size_t history_size)
 {
-	struct slash *slash;
+	slash_t *slash;
 
 	/* Allocate slash context */
 	slash = calloc(1, sizeof(*slash));
@@ -1005,7 +1005,7 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	return slash;
 }
 
-void slash_create_static(struct slash *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size)
+void slash_create_static(slash_t *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size)
 {
 	/* Setup default values */
 	slash->fd_read = STDIN_FILENO;
@@ -1034,7 +1034,7 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 
 }
 
-void slash_destroy(struct slash *slash)
+void slash_destroy(slash_t *slash)
 {
 	slash_restore_term(slash);
 

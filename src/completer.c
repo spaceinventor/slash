@@ -65,7 +65,7 @@ static int last_char_occ(const char * path_str, char target_char) {
     return -1;
 }
 
-void slash_completer_skip_flagged_prefix(struct slash *slash, char * tgt_prefix) {
+void slash_completer_skip_flagged_prefix(slash_t *slash, char * tgt_prefix) {
     if (tgt_prefix == NULL) tgt_prefix = "";
     size_t buffer_len = strlen(slash->buffer);
     size_t prefix_len = strlen(tgt_prefix);
@@ -107,7 +107,7 @@ void slash_completer_skip_flagged_prefix(struct slash *slash, char * tgt_prefix)
 	}
 }
 
-void slash_completer_revert_skip(struct slash *slash, char * orig_slash_buf) {
+void slash_completer_revert_skip(slash_t *slash, char * orig_slash_buf) {
     /* return buffer to original mem address */
 	slash->buffer = orig_slash_buf;
 	slash->length = strlen(slash->buffer);
@@ -132,7 +132,7 @@ int slash_prefix_length(const char *s1, const char *s2)
  * 
  * @param slash Slash context
  */
-void slash_complete(struct slash *slash)
+void slash_complete(slash_t *slash)
 {
 	int matches = 0;
 	size_t prefixlen = -1;
@@ -221,7 +221,7 @@ void slash_complete(struct slash *slash)
  * @param slash Slash context
  * @param token Slash buffer after first space
  */
-void slash_path_completer(struct slash * slash, char * token) {
+void slash_path_completer(slash_t * slash, char * token) {
     // TODO: Add windows support
     char cwd_buf[256];
     char file_name_buf[256];
@@ -347,7 +347,7 @@ void slash_path_completer(struct slash * slash, char * token) {
  * @param slash Slash context
  * @param token Slash buffer after first space
  */
-void slash_watch_completer(struct slash *slash, char * token) {
+void slash_watch_completer(slash_t *slash, char * token) {
     // skip watch
 	char * orig_slash_buffer = slash->buffer;
 	slash_completer_skip_flagged_prefix(slash, "watch");

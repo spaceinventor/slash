@@ -31,7 +31,7 @@
 #define LINE_SIZE		128
 #define HISTORY_SIZE		4096
 
-static int cmd_long(struct slash *slash)
+static int cmd_long(slash_t *slash)
 {
 	printf("Running long command\n");
 
@@ -40,7 +40,7 @@ static int cmd_long(struct slash *slash)
 slash_command(long_command, cmd_long, NULL,
 	      "A long command\n");
 
-static int cmd_longer(struct slash *slash)
+static int cmd_longer(slash_t *slash)
 {
 	printf("Running longer command\n");
 
@@ -49,7 +49,7 @@ static int cmd_longer(struct slash *slash)
 slash_command(longer_command, cmd_longer, NULL,
 	      "An even longer command\n");
 
-static int cmd_test(struct slash *slash)
+static int cmd_test(slash_t *slash)
 {
 	if (slash->argc < 2)
 		return SLASH_EUSAGE;
@@ -62,7 +62,7 @@ slash_command(test, cmd_test, "<arg>",
 	      "A simple test command\n\n"
 	      "Requires a single command which must be present\n");
 
-static int cmd_subcommand(struct slash *slash)
+static int cmd_subcommand(slash_t *slash)
 {
 	printf("Running the test subcommand\n");
 
@@ -71,7 +71,7 @@ static int cmd_subcommand(struct slash *slash)
 slash_command_sub(test, sub_command, cmd_subcommand, NULL,
 		  "A subcommand for test");
 
-static int cmd_args(struct slash *slash)
+static int cmd_args(slash_t *slash)
 {
 	int i;
 
@@ -88,7 +88,7 @@ slash_command_sub(group, args, cmd_args, "[arg ...]",
 
 int main(int argc, char **argv)
 {
-	struct slash *slash;
+	slash_t *slash;
 
 	char *prompt_good = "\033[96mslash \033[90m%\033[0m ";
 	char *prompt_bad = "\033[96mslash \033[31m!\033[0m ";

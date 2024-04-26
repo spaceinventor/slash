@@ -94,15 +94,15 @@
 #define slash_command_subgroup(_group, _name, _help)
 
 /* Command prototype */
-struct slash;
-typedef int (*slash_func_t)(struct slash *slash);
+struct slash_s;
+typedef int (*slash_func_t)(struct slash_s *slash);
 
 /* Wait function prototype,
  * this function is implemented by user, so use a void* instead of struct slash* */
-typedef int (*slash_waitfunc_t)(void *slash, unsigned int ms);
+typedef int (*slash_waitfunc_t)(void *slash_s, unsigned int ms);
 
 /* Autocomplete function prototype */
-typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
+typedef void (*slash_completer_func_t)(struct slash_s *slash, char * token);
 
 /* Command return values */
 #define SLASH_EXIT	( 1)
@@ -130,7 +130,7 @@ struct slash_command {
 };
 
 /* Slash context */
-struct slash {
+typedef struct slash_s {
 
 	/* Terminal handling */
 #ifdef SLASH_HAVE_TERMIOS_H
@@ -178,7 +178,7 @@ struct slash {
 
 	/* Completions */
 	bool in_completion;
-};
+} slash_t;
 
 /**
  * @brief Initializes an APM using slash.
@@ -187,13 +187,13 @@ struct slash {
  */
 void slash_init_apm(void * handle);
 
-struct slash *slash_create(size_t line_size, size_t history_size);
+slash_t *slash_create(size_t line_size, size_t history_size);
 
-void slash_create_static(struct slash *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size);
+void slash_create_static(slash_t *slash, char * line_buf, size_t line_size, char * hist_buf, size_t history_size);
 
-void slash_destroy(struct slash *slash);
+void slash_destroy(slash_t *slash);
 
-char *slash_readline(struct slash *slash);
+char *slash_readline(slash_t *slash);
 
 /**
  * @brief Implement this function to do something with the current line (logging, etc)
@@ -202,29 +202,29 @@ char *slash_readline(struct slash *slash);
  */
 void slash_on_execute_hook(const char *line);
 
-int slash_execute(struct slash *slash, char *line);
+int slash_execute(slash_t *slash, char *line);
 
-int slash_loop(struct slash *slash);
+int slash_loop(slash_t *slash);
 
-int slash_wait_interruptible(struct slash *slash, unsigned int ms);
+int slash_wait_interruptible(slash_t *slash, unsigned int ms);
 
-int slash_set_wait_interruptible(struct slash *slash, slash_waitfunc_t waitfunc);
+int slash_set_wait_interruptible(slash_t *slash, slash_waitfunc_t waitfunc);
 
-int slash_printf(struct slash *slash, const char *format, ...);
+int slash_printf(slash_t *slash, const char *format, ...);
 
-int slash_getopt(struct slash *slash, const char *optstring);
+int slash_getopt(slash_t *slash, const char *optstring);
 
-void slash_clear_screen(struct slash *slash);
+void slash_clear_screen(slash_t *slash);
 
-void slash_require_activation(struct slash *slash, bool activate);
+void slash_require_activation(slash_t *slash, bool activate);
 
-void slash_bell(struct slash *slash);
+void slash_bell(slash_t *slash);
 
 int slash_prefix_length(const char *s1, const char *s2);
 
-int slash_refresh(struct slash *slash, int printtime);
+int slash_refresh(slash_t *slash, int printtime);
 
-int slash_write(struct slash *slash, const char *buf, size_t count);
+int slash_write(slash_t *slash, const char *buf, size_t count);
 
 /**
  * @brief Implement this function to create a custom prompt
@@ -233,13 +233,13 @@ int slash_write(struct slash *slash, const char *buf, size_t count);
  * 
  * @return length of the custom prompt
  */
-int slash_prompt(struct slash * slash);
+int slash_prompt(slash_t * slash);
 
-void slash_command_description(struct slash *slash, struct slash_command *command);
+void slash_command_description(slash_t *slash, struct slash_command *command);
 
-int slash_run(struct slash *slash, char * filename, int printcmd);
+int slash_run(slash_t *slash, char * filename, int printcmd);
 
-void slash_history_add(struct slash *slash, char *line);
+void slash_history_add(slash_t *slash, char *line);
 
 typedef struct slash_list_iterator_s {
 	struct slash_command * element;

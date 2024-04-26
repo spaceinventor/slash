@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int slash_run(struct slash *slash, char * filename, int printcmd) {
+int slash_run(slash_t *slash, char * filename, int printcmd) {
 
     char filename_local[256];
     if (filename[0] == '~') {
@@ -54,7 +54,7 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
 
 }
 
-static int cmd_run(struct slash *slash) {
+static int cmd_run(slash_t *slash) {
 
     optparse_t * parser = optparse_new("run", "<filename>");
     optparse_add_help(parser);
