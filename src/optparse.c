@@ -55,6 +55,21 @@ struct optparse_opt {
 	} spec;
 };
 
+void __optparse_cleanup(optparse_t * parser) {
+
+	if (parser == NULL)
+		return;
+
+	optparse_opt_t * opt;
+
+	while ((opt = parser->options)) {
+		parser->options = opt->next;
+		free(opt);
+	}
+	free(parser);
+}
+
+__attribute__((malloc, malloc(__optparse_cleanup, 1)))
 optparse_t *
 optparse_new(const char * progname, const char * arg_summary) {
 	optparse_t * parser;
@@ -74,14 +89,14 @@ optparse_new(const char * progname, const char * arg_summary) {
 	return parser;
 }
 
-void optparse_del(optparse_t * parser) {
-	optparse_opt_t * opt;
+void optparse_del(optparse_t ** parser) {
 
-	while ((opt = parser->options)) {
-		parser->options = opt->next;
-		free(opt);
-	}
-	free(parser);
+	if (parser == NULL || *parser == NULL)
+		return;
+
+	__optparse_cleanup(*parser);
+
+	*parser = NULL;
 }
 
 static int

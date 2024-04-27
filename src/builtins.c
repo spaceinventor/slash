@@ -81,16 +81,14 @@ void slash_require_activation(struct slash *slash, bool activate)
 }
 
 static int slash_builtin_confirm(struct slash *slash) {
-	optparse_t * parser = optparse_new("confirm", "[]");
+	optparse_t * parser __attribute__((cleanup(optparse_del))) = optparse_new("confirm", "[]");
 	optparse_add_help(parser);
 
 	printf("Confirm: Type 'yes' or 'y' + enter to continue:\n");
 	char * c = slash_readline(slash);
 	if (strcasecmp(c, "yes") == 0 || strcasecmp(c, "y") == 0) {
-		optparse_del(parser);
 		return SLASH_SUCCESS;
 	} else {
-		optparse_del(parser);
 		return SLASH_EBREAK;
 	}
 }
@@ -102,14 +100,13 @@ static int slash_builtin_watch(struct slash *slash)
 	unsigned int interval = slash_dfl_timeout;
 	unsigned int count = 0;
 
-    optparse_t * parser = optparse_new("watch", "<command...>");
+    optparse_t * parser __attribute__((cleanup(optparse_del))) = optparse_new("watch", "<command...>");
     optparse_add_help(parser);
 	optparse_add_unsigned(parser, 'n', "interval", "NUM", 0, &interval, "interval in milliseconds (default = <env timeout>)");
 	optparse_add_unsigned(parser, 'c', "count", "NUM", 0, &count, "number of times to repeat (default = infinite)");
 
     int argi = optparse_parse(parser, slash->argc - 1, (const char **) slash->argv + 1);
     if (argi < 0) {
-        optparse_del(parser);
 	    return SLASH_EINVAL;
     }
 

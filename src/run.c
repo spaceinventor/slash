@@ -56,19 +56,17 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
 
 static int cmd_run(struct slash *slash) {
 
-    optparse_t * parser = optparse_new("run", "<filename>");
+    optparse_t * parser __attribute__((cleanup(optparse_del))) = optparse_new("run", "<filename>");
     optparse_add_help(parser);
 
     int argi = optparse_parse(parser, slash->argc - 1, (const char **) slash->argv + 1);
     if (argi < 0) {
-        optparse_del(parser);
 	    return SLASH_EINVAL;
     }
 
 	/* Check if name is present */
 	if (++argi >= slash->argc) {
 		printf("missing parameter filename\n");
-        optparse_del(parser);
 		return SLASH_EINVAL;
 	}
 
@@ -77,7 +75,6 @@ static int cmd_run(struct slash *slash) {
     printf("Running %s\n", name);
 
     int res = slash_run(slash, name, 1);
-    optparse_del(parser);
     return res;
 
 }
