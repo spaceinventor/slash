@@ -28,7 +28,7 @@ struct slash_command * slash_list_iterate(slash_list_iterator * iterator) {
 	return iterator->element;
 }
 
-struct slash_command * slash_list_find_name(char * name) {
+struct slash_command * slash_list_find_name(const char * name) {
 
 	struct slash_command * found = NULL;
 	struct slash_command * cmd;
@@ -56,6 +56,17 @@ int slash_list_add(struct slash_command * item) {
 	} else {
 		SLIST_INSERT_HEAD(&slash_list_head, item, next);
 		return 0;
+	}
+}
+
+int slash_list_remove(struct slash_command * item) {
+
+	struct slash_command * cmd;
+	if ((cmd = slash_list_find_name(item->name)) != NULL) {  // Check that the command exists in the global list
+		SLIST_REMOVE(&slash_list_head, cmd, slash_command, next);
+		return 0;
+	} else {
+		return -1;
 	}
 }
 
