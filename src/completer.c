@@ -241,7 +241,9 @@ void slash_path_completer(struct slash * slash, char * token) {
     slash_completer_skip_flagged_prefix(slash, NULL);
 
     /* lazy fix */
-    token = slash->buffer;
+    /* TODO?: Not really sure what the line below is supposed to fix,
+        but it breaks tab-completion of sub commands ¯\_(ツ)_/¯ */
+    //token = slash->buffer;
 
     char* res = getcwd(cwd_buf, sizeof(cwd_buf));
     
