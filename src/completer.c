@@ -343,18 +343,34 @@ void slash_path_completer(struct slash * slash, char * token) {
     free((void*)match_list);
 }
 
+static void slash_complete_other_commands(struct slash *slash, char * token, char * prefix) {
+    // skip prefix
+	char * orig_slash_buffer = slash->buffer;
+	slash_completer_skip_flagged_prefix(slash, prefix);
+
+    slash_complete(slash);
+
+    slash_completer_revert_skip(slash, orig_slash_buffer);
+}
+
 /**
  * @brief For tab auto completion when using "watch"
- * 
+ *
  * @param slash Slash context
  * @param token Slash buffer after first space
  */
 void slash_watch_completer(struct slash *slash, char * token) {
     // skip watch
-	char * orig_slash_buffer = slash->buffer;
-	slash_completer_skip_flagged_prefix(slash, "watch");
+    slash_complete_other_commands(slash, token, "watch");
+}
 
-    slash_complete(slash);
-
-    slash_completer_revert_skip(slash, orig_slash_buffer);
+/**
+ * @brief For tab auto completion when using "help"
+ *
+ * @param slash Slash context
+ * @param token Slash buffer after first space
+ */
+void slash_help_completer(struct slash *slash, char * token) {
+    // skip help
+    slash_complete_other_commands(slash, token, "help");
 }

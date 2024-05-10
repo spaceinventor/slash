@@ -48,7 +48,7 @@ static int slash_builtin_help(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command(help, slash_builtin_help, "[command]",
+slash_command_completer(help, slash_builtin_help, slash_help_completer, "[command]",
 	      "Show available commands");
 
 static int slash_builtin_history(struct slash *slash)
