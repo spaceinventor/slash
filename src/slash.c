@@ -284,7 +284,7 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 	return max_match_cmd;
 }
 
-static int slash_build_args(char *args, char **argv, int *argc)
+int slash_build_args(char *args, char **argv, int *argc)
 {
 	/* Quote level */
 	enum {
