@@ -1,2 +1,1 @@
 option('timestamp', type: 'boolean', value: true, description: 'Print timestamp on commands')
-option('builtins', type: 'boolean', value: false, description: 'Whether to include the built-in commands, most often false for libraries')
