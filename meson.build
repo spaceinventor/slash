@@ -5,15 +5,10 @@ slash_sources = files([
 	'src/completer.c',
 	'src/optparse.c',
 	'src/slash_list.c',
-	])
-
-if get_option('builtins')
-	slash_sources += files([
-		'src/builtins.c',
-		'src/dflopt.c',
-		'src/run.c',
-	])
-endif
+	'src/dflopt.c',
+	'src/builtins.c',
+	'src/run.c',
+])
 
 conf = configuration_data()
 if meson.get_compiler('c').has_header('sys/termios.h')
@@ -33,16 +28,25 @@ slash_config_h = configure_file(output: 'slash_config.h', configuration: conf)
 slash_inc = include_directories('.', 'include')
 
 dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], default_options: ['default_library=static'], required: false)
-	
-slash_lib = library('slash',
+
+do_install = not meson.is_subproject()
+
+slash_lib = both_libraries('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
-	install : false,
+	install : do_install,
 )
 	
 slash_dep = declare_dependency(
 	include_directories : slash_inc,
 	link_with : slash_lib,
 )
+
+if do_install
+	pkg = import('pkgconfig')
+	pkg.generate(slash_lib, filebase: 'slash')
+	install_subdir('include', install_dir : '.')
+	install_headers(slash_config_h, install_dir : 'include')
+endif
 
