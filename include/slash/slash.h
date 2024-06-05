@@ -33,6 +33,10 @@
 #include <termios.h>
 #endif
 
+#ifndef SLASH_SECTION
+#define SLASH_SECTION "slash"
+#endif
+
 
 /* Helper macros */
 #define slash_offsetof(type, member) ((size_t) &((type *)0)->member)
@@ -52,7 +56,7 @@
 	_a < _b ? _a : _b; })
 
 #define __slash_command(_ident, _name, _func, _completer, _args, _help) 	\
-	__attribute__((section("slash")))\
+	__attribute__((section(SLASH_SECTION)))\
 	__attribute__((aligned(4)))\
 	__attribute__((used))\
 	const struct slash_command _ident = {\
@@ -277,5 +281,23 @@ struct slash_command * slash_list_find_name(const char * name);
 int slash_list_add(struct slash_command * item);
 int slash_list_remove(const struct slash_command * item);
 int slash_list_init();
+
+/**
+ * @brief Register slash commands defined in a section (in the ELF sense)
+ * @param start pointer to the first element in the section
+ * @param stop pointer to the last element in the section
+ */
+void slash_load_cmds_from_section(struct slash_command *start, struct slash_command *stop);
+
+/** 
+ * @brief helper macro to load slash cmds from the given ELF section name
+ * @example To load the slash commands defined in the "my_slash" ELF section:
+ *      SLASH_LOAD_CMDS(my_slash);
+ */
+#define SLASH_LOAD_CMDS(section) { \
+	extern struct slash_command __start_##section; \
+	extern struct slash_command __stop_##section; \
+	slash_load_cmds_from_section(&(__start_##section), &(__stop_##section)); \
+}
 
 #endif /* _SLASH_H_ */
