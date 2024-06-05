@@ -38,9 +38,14 @@ slash_lib = both_libraries('slash',
 	install : do_install,
 )
 	
+slash_shared_dep = declare_dependency(
+	include_directories : slash_inc,
+	link_with : slash_lib.get_shared_lib(),
+)
+
 slash_dep = declare_dependency(
 	include_directories : slash_inc,
-	link_with : slash_lib,
+	link_with : slash_lib.get_static_lib(),
 )
 
 if do_install
