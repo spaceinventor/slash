@@ -70,23 +70,20 @@ int slash_list_remove(struct slash_command * item) {
 	}
 }
 
-int slash_list_init() {
-
-	/**
-	 * GNU Linker symbols. These will be autogenerate by GCC when using
-	 * __attribute__((section("slash"))
-	 */
-	__attribute__((weak)) extern struct slash_command __start_slash;
-	__attribute__((weak)) extern struct slash_command __stop_slash;
-
+void slash_load_cmds_from_section(struct slash_command *start, struct slash_command *stop) {
 	slash_list_iterator iterator = {};
-	iterator.element = &__start_slash;
+	iterator.element = start;
 
-	while (iterator.element != &__stop_slash) {
+	while (iterator.element != stop) {
 		slash_list_add(iterator.element);
 
 		iterator.element = (struct slash_command *)(intptr_t)((char *)iterator.element + SLASH_STORAGE_SIZE);
 	}
+
+}
+
+int slash_list_init() {
+	SLASH_LOAD_CMDS(slash);
 
 	return 0;
 }
