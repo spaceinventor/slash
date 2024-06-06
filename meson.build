@@ -29,13 +29,11 @@ slash_inc = include_directories('.', 'include')
 
 dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], default_options: ['default_library=static'], required: false)
 
-do_install = not meson.is_subproject()
-
 slash_lib = both_libraries('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
-	install : do_install,
+	install : true,
 )
 	
 slash_shared_dep = declare_dependency(
@@ -48,10 +46,8 @@ slash_dep = declare_dependency(
 	link_with : slash_lib.get_static_lib(),
 )
 
-if do_install
-	pkg = import('pkgconfig')
-	pkg.generate(slash_lib, filebase: 'slash')
-	install_subdir('include', install_dir : '.')
-	install_headers(slash_config_h, install_dir : 'include')
-endif
+pkg = import('pkgconfig')
+pkg.generate(slash_lib, filebase: 'slash')
+install_subdir('include', install_dir : '.')
+install_headers(slash_config_h, install_dir : 'include')
 
