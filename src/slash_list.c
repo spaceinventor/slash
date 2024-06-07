@@ -82,6 +82,8 @@ void slash_load_cmds_from_section(struct slash_command *start, struct slash_comm
 
 }
 
+DECLARE_SLASH_CMDS_SECTION(slash)
+
 int slash_list_init() {
 	SLASH_LOAD_CMDS(slash);
 

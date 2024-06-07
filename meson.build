@@ -33,6 +33,8 @@ slash_lib = both_libraries('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
+	c_args: ['-DSLASH_SECTION="slash"'],
+	pic:true,
 	install : true,
 )
 	
