@@ -273,4 +273,11 @@ void slash_load_cmds_from_section(struct slash_command *start, struct slash_comm
 	slash_load_cmds_from_section(&(__start_##section), &(__stop_##section)); \
 }
 
+
+#define DECLARE_SLASH_CMDS_SECTION(section) \
+	extern struct slash_command __start_##section; \
+	extern struct slash_command __stop_##section; \
+	struct slash_command *section##_start = &__start_##section; \
+	struct slash_command *section##_stop = &__stop_##section;
+
 #endif /* _SLASH_H_ */
