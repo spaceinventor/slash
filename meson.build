@@ -29,7 +29,7 @@ slash_inc = include_directories('.', 'include')
 
 dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], default_options: ['default_library=static'], required: false)
 
-slash_lib = both_libraries('slash',
+slash_lib = library('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
@@ -38,14 +38,9 @@ slash_lib = both_libraries('slash',
 	install : true,
 )
 	
-slash_shared_dep = declare_dependency(
-	include_directories : slash_inc,
-	link_with : slash_lib.get_shared_lib(),
-)
-
 slash_dep = declare_dependency(
 	include_directories : slash_inc,
-	link_with : slash_lib.get_static_lib(),
+	link_with : slash_lib
 )
 
 pkg = import('pkgconfig')
