@@ -26,6 +26,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include <slash_config.h>
 
@@ -161,7 +162,7 @@ struct slash {
 	char *history_head;
 	char *history_tail;
 	char *history_cursor;
-
+	FILE *history_file;
 	/* Command interface */
 	char **argv;
 	int argc;
@@ -238,6 +239,13 @@ int slash_prompt(struct slash * slash);
 void slash_command_description(struct slash *slash, struct slash_command *command);
 
 int slash_run(struct slash *slash, char * filename, int printcmd);
+
+/**
+ * @brief Populate Slash history buffer with the content of the given file
+ * @param slash pointer to valid slash context
+ * @param history_filename filename to use (will be created if it doesn't exist) to read and write history
+ */
+void slash_init_history_from_file(struct slash *slash, const char *history_filename);
 
 void slash_history_add(struct slash *slash, char *line);
 
