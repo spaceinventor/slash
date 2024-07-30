@@ -1,4 +1,5 @@
 #include <slash/completer.h>
+#include <slash/slash.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -6,6 +7,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <dirent.h>
+#include <sys/queue.h>
 
 static void ls_appended(const char* tok, const char* app) {
     char cmd[PATH_MAX + 3];
@@ -117,102 +119,107 @@ void slash_completer_revert_skip(struct slash *slash, char * orig_slash_buf) {
 int slash_prefix_length(const char *s1, const char *s2)
 {
 	int len = 0;
-
-	while (*s1 && *s2 && *s1 == *s2) {
-		len++;
-		s1++;
-		s2++;
-	}
-
+    if (s1 && s2) {
+        while (*s1 && *s2 && *s1 == *s2) {
+            len++;
+            s1++;
+            s2++;
+        }
+    }
 	return len;
 }
 
+SLIST_HEAD( completion_list, completion_entry );
+struct completion_entry {
+    struct slash_command * cmd;
+    SLIST_ENTRY(completion_entry) list;
+};
+
 /**
  * @brief For tab auto completion, calls other completion functions when matched command has them
- * 
+ *
  * @param slash Slash context
  */
 void slash_complete(struct slash *slash)
 {
 	int matches = 0;
-	size_t prefixlen = -1;
-	struct slash_command *prefix = NULL;
-	
 	struct slash_command * cmd;
+    struct completion_list completions;
+    struct completion_entry *completion = NULL;
+    struct completion_entry *cur_completion;
+    SLIST_INIT( &completions );
 	slash_list_iterator i = {};
-    	while ((cmd = slash_list_iterate(&i)) != NULL) {
-
-        if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), slash->length)) == 0) {
-
-            if(strlen(cmd->name) < slash->length && slash->buffer[slash->length - 1] != ' ') {
-                if (NULL == prefix) {
-                    /* Count matches */
-                    matches++;
-                    slash->in_completion = true;
-                    prefix = cmd;
-                    if (matches == 1)
-                        slash_printf(slash, "\n");
-                }
-                continue;
+    size_t cmd_len;
+    int cur_prefix;
+    int cmd_match;
+    int len_to_compare_to = slash->buffer[slash->length-1] == ' '?slash->length-1:slash->length;
+    while ((cmd = slash_list_iterate(&i)) != NULL) {
+        cmd_len = strlen(cmd->name);
+        cmd_match = strncmp(slash->buffer, cmd->name, slash_min(len_to_compare_to, cmd_len));
+        /* Do we have an exact match on the buffer ?*/
+        if (cmd_match == 0) {
+            if((cmd_len < len_to_compare_to && cmd->completer) || (cmd_len >= len_to_compare_to)) {
+                matches++;
+                completion = malloc(sizeof(struct completion_entry));
+                completion->cmd = cmd;
+                SLIST_INSERT_HEAD(&completions, completion, list);
             }
-            if(false == slash->in_completion) {
-                if(strlen(cmd->name) < (slash->length - 1) && slash->buffer[slash->length - 1] == ' ') {
-                    continue;
-                }
+        }
+    }
+    if(matches > 1) {
+        /* We only print all commands over 1 match here */
+        slash_printf(slash, "\n");
+    }
+    struct completion_entry *prev_completion = NULL;
+    int prefix_len = INT_MAX;
+
+    SLIST_FOREACH(cur_completion, &completions, list) {
+        if (prev_completion != 0) {
+            cur_prefix = slash_prefix_length(prev_completion->cmd->name, cur_completion->cmd->name);
+            if(cur_prefix < prefix_len) {
+                prefix_len = cur_prefix;
+                completion = cur_completion;
             }
-            /* Count matches */
-            matches++;
-            slash->in_completion = true;
-			/* Find common prefix */
-			if (prefixlen == (size_t) -1) {
-				prefix = cmd;
-				prefixlen = strlen(prefix->name);
-			} else {
-				size_t new_prefixlen = slash_prefix_length(prefix->name, cmd->name);
-				if (new_prefixlen < prefixlen)
-					prefixlen = new_prefixlen;
-			}
-
-			/* Print newline on first match */
-			if (matches == 1)
-				slash_printf(slash, "\n");
-
-			/* We only print all commands over 1 match here */
-			if (matches > 1)
-				slash_command_description(slash, cmd);
-
-		}
-
-	}
-
-	if (!matches) {
-        slash->in_completion = false;
-		slash_bell(slash);
-	} else if (matches == 1) {        
-		if (prefixlen != -1) { 
-            if (slash->cursor <= prefixlen) {
-                strncpy(slash->buffer, prefix->name, prefixlen);
-                slash->buffer[prefixlen] = '\0';
-                strcat(slash->buffer, " ");
-                slash->cursor = slash->length = strlen(slash->buffer);
-            } else {
-                if (prefix->completer) {
-                    prefix->completer(slash, slash->buffer + prefixlen + 1);
-                }
+        }
+        prev_completion = cur_completion;
+        if(matches > 1) {
+            slash_command_description(slash, cur_completion->cmd);
+        }
+    }
+    if (matches == 1) {
+        /* Reassign cmd_len to the current completion as it may have changed during the loop */
+        cmd_len = strlen(completion->cmd->name);
+        if(slash->length < strlen(completion->cmd->name)) {
+            /* The buffer uniquely completes to a longer command */
+            strncpy(slash->buffer, completion->cmd->name, cmd_len);
+            slash->buffer[cmd_len] = '\0';
+            slash->cursor = slash->length = strlen(slash->buffer);
+        }
+        if (completion->cmd->completer) {
+            /* Call the matching command completer with the rest of the buffer */
+            if(slash->length == strlen(completion->cmd->name)) {
+                slash->buffer[slash->length] = ' ';
+                slash->buffer[slash->length+1] = '\0';
+                slash->cursor++;
+                slash->length++;
             }
-		} else {
-			if (prefix->completer) {
-				prefix->completer(slash, slash->buffer + strlen(prefix->name) + 1);
-			}
-		}
-	} else if (slash->last_char != '\t') {
-		/* Print the first match as well */
-		slash_command_description(slash, prefix);
- 		strncpy(slash->buffer, prefix->name, prefixlen);
-		slash->buffer[prefixlen] = '\0';
-		slash->cursor = slash->length = strlen(slash->buffer);
-		slash_bell(slash);
-	}
+            slash_printf(slash, "\n");
+            completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
+        }
+    } else if(matches > 1) {
+        if(slash->buffer[slash->length-1] != ' ') {
+            strncpy(slash->buffer, completion->cmd->name, prefix_len);
+            slash->buffer[prefix_len] = '\0';
+            slash->cursor = slash->length = strlen(slash->buffer);
+        }
+    }
+    /* Free up the completion list we built up earlier */
+    while (!SLIST_EMPTY(&completions))
+    {
+        completion = SLIST_FIRST(&completions);
+        SLIST_REMOVE(&completions, completion, completion_entry, list);
+        free(completion);
+    }
 }
 
 /**
