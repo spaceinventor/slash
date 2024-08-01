@@ -74,7 +74,7 @@ void slash_completer_skip_flagged_prefix(struct slash *slash, char * tgt_prefix)
 
     /* if slash buffer begins with tgt_prefix */
 	if (!strncmp(slash->buffer, tgt_prefix, prefix_len)) {
-		char * tmp_buf = (char *) malloc(buffer_len+1);
+		char * tmp_buf = (char *) calloc(1, buffer_len+1);
 		if (tmp_buf != NULL) { 
 			strncpy(tmp_buf, slash->buffer + prefix_len, buffer_len-prefix_len);
 		} else {
