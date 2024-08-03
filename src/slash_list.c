@@ -59,7 +59,7 @@ int slash_list_add(struct slash_command * item) {
 	}
 }
 
-int slash_list_remove(struct slash_command * item) {
+int slash_list_remove(const struct slash_command * item) {
 
 	struct slash_command * cmd;
 	if ((cmd = slash_list_find_name(item->name)) != NULL) {  // Check that the command exists in the global list

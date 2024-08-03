@@ -252,7 +252,7 @@ typedef struct slash_list_iterator_s {
 struct slash_command * slash_list_iterate(slash_list_iterator * iterator);
 struct slash_command * slash_list_find_name(const char * name);
 int slash_list_add(struct slash_command * item);
-int slash_list_remove(struct slash_command * item);
+int slash_list_remove(const struct slash_command * item);
 int slash_list_init();
 
 /**
