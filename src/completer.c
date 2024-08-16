@@ -203,7 +203,6 @@ void slash_complete(struct slash *slash)
                 slash->cursor++;
                 slash->length++;
             }
-            slash_printf(slash, "\n");
             completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
         }
     } else if(matches > 1) {
