@@ -85,26 +85,31 @@ void slash_completer_skip_flagged_prefix(struct slash *slash, char * tgt_prefix)
 		
 		/* start at 1 in case first word following tgt_prefix is not a flag */
 		int consecutive_ctr = !strcmp(tgt_prefix, "") ? 0 : 1;
-
-		/* if flagged, search for 2nd word not starting with '-' or first word not starting with '--' */
-		while (token != NULL) {
-			if (token[0] != '-') {
-				consecutive_ctr++;
-				
-				if (consecutive_ctr == 2) {
-					/* move buffer pointer ahead of "tgt_prefix [OPTIONS] ..." */
-					slash->buffer = slash->buffer + (prefix_len+(token-tmp_buf));
-					slash->length = strlen(slash->buffer);
-					slash->cursor = slash->length;
-					break;
-            	}
-			} else if (token[1] == '-') {
-				consecutive_ctr++;
-			} else {
-				consecutive_ctr = 0;
-			}
-			token = strtok(NULL, " ");
-		}
+        if(!token) {
+            slash->buffer = slash->buffer + prefix_len + 1;
+            slash->length = strlen(slash->buffer);
+            slash->cursor = slash->length;
+        } else {
+            /* if flagged, search for 2nd word not starting with '-' or first word not starting with '--' */
+            while (token != NULL) {
+                if (token[0] != '-') {
+                    consecutive_ctr++;
+                    
+                    if (consecutive_ctr == 2) {
+                        /* move buffer pointer ahead of "tgt_prefix [OPTIONS] ..." */
+                        slash->buffer = slash->buffer + (prefix_len+(token-tmp_buf));
+                        slash->length = strlen(slash->buffer);
+                        slash->cursor = slash->length;
+                        break;
+                    }
+                } else if (token[1] == '-') {
+                    consecutive_ctr++;
+                } else {
+                    consecutive_ctr = 0;
+                }
+                token = strtok(NULL, " ");
+            }
+        }
 		free(tmp_buf);
 	}
 }
@@ -152,7 +157,7 @@ void slash_complete(struct slash *slash)
     size_t cmd_len;
     int cur_prefix;
     int cmd_match;
-    int len_to_compare_to = slash->buffer[slash->length-1] == ' '?slash->length-1:slash->length;
+    int len_to_compare_to = slash->length>0?slash->buffer[slash->length-1] == ' '?slash->length-1:slash->length:0;
     while ((cmd = slash_list_iterate(&i)) != NULL) {
         cmd_len = strlen(cmd->name);
         cmd_match = strncmp(slash->buffer, cmd->name, slash_min(len_to_compare_to, cmd_len));
