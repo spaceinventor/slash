@@ -6,6 +6,7 @@
 #include <slash/slash.h>
 #include <slash/dflopt.h>
 #include <slash/optparse.h>
+#include <slash/completer.h>
 
 #include "builtins.h"
 
@@ -47,10 +48,10 @@ static int slash_builtin_help(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command(help, slash_builtin_help, "[command]",
+slash_command_completer(help, slash_builtin_help, slash_help_completer, "[command]",
 	      "Show available commands");
 
-          static int slash_builtin_history(struct slash *slash)
+static int slash_builtin_history(struct slash *slash)
 {
 	char *p = slash->history_head;
 
@@ -78,6 +79,22 @@ void slash_require_activation(struct slash *slash, bool activate)
 {
 	slash->use_activate = activate;
 }
+
+static int slash_builtin_confirm(struct slash *slash) {
+	optparse_t * parser = optparse_new("confirm", "[]");
+	optparse_add_help(parser);
+
+	printf("Confirm: Type 'yes' or 'y' + enter to continue:\n");
+	char * c = slash_readline(slash);
+	if (strcasecmp(c, "yes") == 0 || strcasecmp(c, "y") == 0) {
+		optparse_del(parser);
+		return SLASH_SUCCESS;
+	} else {
+		optparse_del(parser);
+		return SLASH_EBREAK;
+	}
+}
+slash_command(confirm, slash_builtin_confirm, "", "Block until user confirmation");
 
 static int slash_builtin_watch(struct slash *slash)
 {
@@ -128,4 +145,4 @@ static int slash_builtin_watch(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command(watch, slash_builtin_watch, "<command...>", "Repeat a command");
+slash_command_completer(watch, slash_builtin_watch, slash_watch_completer, "<command...>", "Repeat a command")

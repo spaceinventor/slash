@@ -114,6 +114,7 @@ typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 #define SLASH_EIO	(-4)
 #define SLASH_ENOMEM	(-5)
 #define SLASH_ENOENT	(-6)
+#define SLASH_EBREAK	(-7)
 
 /* Command struct */
 struct slash_command {
@@ -176,6 +177,9 @@ struct slash {
 
     /* Command list */
     struct slash_command * cmd_list;
+
+	/* Completions */
+	bool in_completion;
 };
 
 /**
@@ -192,6 +196,13 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 void slash_destroy(struct slash *slash);
 
 char *slash_readline(struct slash *slash);
+
+/**
+ * @brief Implement this function to do something with the current line (logging, etc)
+ * 
+ * @param line the slash line about to be executed
+ */
+void slash_on_execute_hook(const char *line);
 
 int slash_execute(struct slash *slash, char *line);
 
@@ -217,20 +228,29 @@ int slash_refresh(struct slash *slash, int printtime);
 
 int slash_write(struct slash *slash, const char *buf, size_t count);
 
+/**
+ * @brief Implement this function to create a custom prompt
+ * 
+ * A default no-prompt implementation is provided as a __attribute__((weak))
+ * 
+ * @return length of the custom prompt
+ */
 int slash_prompt(struct slash * slash);
+
+void slash_command_description(struct slash *slash, struct slash_command *command);
 
 int slash_run(struct slash *slash, char * filename, int printcmd);
 
 void slash_history_add(struct slash *slash, char *line);
 
-#ifndef SLASH_USE_LINKED_SECTIONS
 typedef struct slash_list_iterator_s {
-	int phase;							// Hybrid iterator has multiple phases (0 == Static, 1 == Dynamic List)
 	struct slash_command * element;
 } slash_list_iterator;
 
 struct slash_command * slash_list_iterate(slash_list_iterator * iterator);
+struct slash_command * slash_list_find_name(const char * name);
 int slash_list_add(struct slash_command * item);
-#endif
+int slash_list_remove(const struct slash_command * item);
+int slash_list_init();
 
 #endif /* _SLASH_H_ */

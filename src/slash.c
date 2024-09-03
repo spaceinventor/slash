@@ -23,7 +23,7 @@
 
 #include <slash/slash.h>
 #include <slash/optparse.h>
-
+#include <slash/completer.h>
 
 #include <dlfcn.h>
 #include <stdio.h>
@@ -284,7 +284,7 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 	return max_match_cmd;
 }
 
-static int slash_build_args(char *args, char **argv, int *argc)
+int slash_build_args(char *args, char **argv, int *argc)
 {
 	/* Quote level */
 	enum {
@@ -355,8 +355,15 @@ void slash_command_description(struct slash *slash, struct slash_command *comman
 	slash_printf(slash, "%-15s\r\n", command->name);
 }
 
-extern int loki_running;
-void loki_add(char * log, int iscmd);
+
+/* Implement this function to perform logging for example */
+__attribute__((weak)) void slash_on_execute_hook(const char *line) {
+}
+
+/* A default no-prompt implementation is provided as a __attribute__((weak)) */
+__attribute__((weak)) int slash_prompt(struct slash *slash) {
+	return 0;
+}
 
 int slash_execute(struct slash *slash, char *line)
 {
@@ -375,15 +382,8 @@ int slash_execute(struct slash *slash, char *line)
 		return -ENOENT;
 	}
 
-	if(loki_running){
-		int ex_len = strlen(line);
-		char * dup = malloc(ex_len + 2);
-		strncpy(dup, line, ex_len);
-		dup[ex_len] = '\n';
-		dup[ex_len + 1] = '\0';
-		loki_add(dup, 1);
-		free(dup);
-	}
+	/* Implement this function to perform logging for example */
+	slash_on_execute_hook(line);
 
 	if (!command->func) {
 		return -EINVAL;
@@ -410,82 +410,6 @@ int slash_execute(struct slash *slash, char *line)
 		slash_command_usage(slash, command);
 
 	return ret;
-}
-
-/* Completion */
-int slash_prefix_length(const char *s1, const char *s2)
-{
-	int len = 0;
-
-	while (*s1 && *s2 && *s1 == *s2) {
-		len++;
-		s1++;
-		s2++;
-	}
-
-	return len;
-}
-
-static void slash_complete(struct slash *slash)
-{
-	int matches = 0;
-	size_t prefixlen = -1;
-	struct slash_command *prefix = NULL;
-	size_t buffer_len = strlen(slash->buffer);
-
-	struct slash_command * cmd;
-	slash_list_iterator i = {};
-	while ((cmd = slash_list_iterate(&i)) != NULL) {
-
-		if (strncmp(slash->buffer, cmd->name, slash_min(strlen(cmd->name), buffer_len)) == 0) {
-
-			/* Count matches */
-			matches++;
-
-			/* Find common prefix */
-			if (prefixlen == (size_t) -1) {
-				prefix = cmd;
-				prefixlen = strlen(prefix->name);
-			} else {
-				size_t new_prefixlen = slash_prefix_length(prefix->name, cmd->name);
-				if (new_prefixlen < prefixlen)
-					prefixlen = new_prefixlen;
-			}
-
-			/* Print newline on first match */
-			if (matches == 1)
-				slash_printf(slash, "\n");
-
-			/* We only print all commands over 1 match here */
-			if (matches > 1)
-				slash_command_description(slash, cmd);
-
-		}
-
-	}
-
-	if (!matches) {
-		slash_bell(slash);
-	} else if (matches == 1) {
-		if (slash->cursor <= prefixlen) {
-			strncpy(slash->buffer, prefix->name, prefixlen);
-			slash->buffer[prefixlen] = '\0';
-			strcat(slash->buffer, " ");
-			slash->cursor = slash->length = strlen(slash->buffer);
-		} else {
-			if (prefix->completer) {
-				prefix->completer(slash, slash->buffer + prefixlen + 1);
-			}
-		}
-	} else if (slash->last_char != '\t') {
-		/* Print the first match as well */
-		slash_command_description(slash, prefix);
-		strncpy(slash->buffer, prefix->name, prefixlen);
-		slash->buffer[prefixlen] = '\0';
-		slash->cursor = slash->length = strlen(slash->buffer);
-		slash_bell(slash);
-	}
-
 }
 
 /* History */
@@ -1076,6 +1000,14 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
 
+	slash_list_init();
+
+	if (tcgetattr(slash->fd_read, &slash->original) < 0) {
+		free(slash->buffer);
+		free(slash);
+		return NULL;
+	}
+
 	return slash;
 }
 
@@ -1103,10 +1035,16 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 
     /* Empty command list */
     slash->cmd_list = 0;
+
+	slash->in_completion = false;
+
+	tcgetattr(slash->fd_read, &slash->original);
 }
 
 void slash_destroy(struct slash *slash)
 {
+	slash_restore_term(slash);
+
 	if (slash->buffer) {
 		free(slash->buffer);
 		slash->buffer = NULL;
