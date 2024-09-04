@@ -158,13 +158,25 @@ void slash_complete(struct slash *slash)
     size_t cmd_len;
     int cur_prefix;
     int cmd_match;
+    {
+        /* Let's take care of multiple consecutive trailing spaces */
+        int nof_trailing_spaces = 0;
+        while (nof_trailing_spaces < slash->length && slash->buffer[slash->length - 1 - nof_trailing_spaces] == ' ') {
+            nof_trailing_spaces++;
+        }
+        if(nof_trailing_spaces > 1) {
+            slash->length -= (nof_trailing_spaces - 1);
+            slash->cursor = slash->length;
+            slash->buffer[slash->length] = '\0';
+        }
+    }
     int len_to_compare_to = slash->length>0?slash->buffer[slash->length-1] == ' '?slash->length-1:slash->length:0;
     while ((cmd = slash_list_iterate(&i)) != NULL) {
         cmd_len = strlen(cmd->name);
         cmd_match = strncmp(slash->buffer, cmd->name, slash_min(len_to_compare_to, cmd_len));
         /* Do we have an exact match on the buffer ?*/
         if (cmd_match == 0) {
-            if((cmd_len < len_to_compare_to && cmd->completer) || (cmd_len >= len_to_compare_to)) {
+            if((cmd_len < len_to_compare_to && cmd->completer) || (len_to_compare_to <= cmd_len)) {
                 matches++;
                 completion = malloc(sizeof(struct completion_entry));
                 completion->cmd = cmd;
@@ -180,6 +192,7 @@ void slash_complete(struct slash *slash)
     int prefix_len = INT_MAX;
 
     SLIST_FOREACH(cur_completion, &completions, list) {
+        /* Compute the length of prefix common to all completions */
         if (prev_completion != 0) {
             cur_prefix = slash_prefix_length(prev_completion->cmd->name, cur_completion->cmd->name);
             if(cur_prefix < prefix_len) {
@@ -202,17 +215,24 @@ void slash_complete(struct slash *slash)
             slash->cursor = slash->length = strlen(slash->buffer);
         }
         if (completion->cmd->completer) {
-            /* Call the matching command completer with the rest of the buffer */
-            if(slash->length == strlen(completion->cmd->name)) {
-                slash->buffer[slash->length] = ' ';
-                slash->buffer[slash->length+1] = '\0';
-                slash->cursor++;
-                slash->length++;
+            /* Call the matching command completer with the rest of the buffer but only the current 
+               completer allows it */
+            if(slash->complete_in_completion == true) {
+                if(slash->length == strlen(completion->cmd->name)) {
+                    slash->buffer[slash->length] = ' ';
+                    slash->buffer[slash->length+1] = '\0';
+                    slash->cursor++;
+                    slash->length++;
+                }
+                completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
             }
-            completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
         }
     } else if(matches > 1) {
-        if(slash->buffer[slash->length-1] != ' ') {
+        /* Fill the buffer with as much characters as possible:
+         * if what the user typed in doesn't end with a space, we might
+         * as well put all the common prefix in the buffer
+         */
+        if(slash->buffer[slash->length-1] != ' ' && len_to_compare_to < prefix_len) {
             strncpy(slash->buffer, completion->cmd->name, prefix_len);
             slash->buffer[prefix_len] = '\0';
             slash->cursor = slash->length = strlen(slash->buffer);
@@ -383,6 +403,10 @@ void slash_watch_completer(struct slash *slash, char * token) {
  * @param token Slash buffer after first space
  */
 void slash_help_completer(struct slash *slash, char * token) {
+    bool previous_state = slash->complete_in_completion;
+    /* Do not complete past the command name */
+    slash->complete_in_completion = false;
     // skip help
     slash_complete_other_commands(slash, token, "help");
+    slash->complete_in_completion = previous_state;
 }
