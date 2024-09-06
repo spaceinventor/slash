@@ -347,7 +347,12 @@ void slash_command_usage(struct slash *slash, struct slash_command *command)
 {
 	const char *args = command->args ? command->args : "";
 	const char *type = command->func ? "usage" : "group";
-	slash_printf(slash, "%s: %s %s\n", type, command->name, args);
+	const char *help = command->help;
+	if(NULL != help) {
+		slash_printf(slash, "%s: %s %s\n\n%s\n\n", type, command->name, args, help);
+	} else {
+		slash_printf(slash, "%s: %s %s\n", type, command->name, args);
+	}
 }
 
 void slash_command_description(struct slash *slash, struct slash_command *command)

@@ -31,7 +31,7 @@ struct optparse {
 	int argi;
 	int argc;
 	const char ** argv;
-
+	const char *help;
 	void * ptr;
 };
 
@@ -57,6 +57,10 @@ struct optparse_opt {
 
 optparse_t *
 optparse_new(const char * progname, const char * arg_summary) {
+	return optparse_new_ex(progname, arg_summary, NULL);
+}
+
+optparse_t *optparse_new_ex(const char *progname, const char *arg_summary, const char *help) {
 	optparse_t * parser;
 
 	parser = malloc(sizeof(*parser));
@@ -70,6 +74,8 @@ optparse_new(const char * progname, const char * arg_summary) {
 
 	if (arg_summary)
 		parser->arg_summary = arg_summary;
+
+	parser->help = help;
 
 	return parser;
 }
@@ -217,6 +223,11 @@ void optparse_help(optparse_t * parser, FILE * fp) {
 	if (parser->arg_summary)
 		fprintf(fp, " %s", parser->arg_summary);
 	fprintf(fp, "\n\n");
+
+	if (parser->help) {
+		fprintf(fp, "%s", parser->help);
+		fprintf(fp, "\n\n");
+	}
 
 	for (opt = parser->options; opt; opt = opt->next) {
 		int col = 0;

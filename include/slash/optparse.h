@@ -13,7 +13,29 @@
 typedef struct optparse optparse_t;
 typedef struct optparse_opt optparse_opt_t;
 
+/**
+ * @brief Create a new option parser context, remeber to free it using optparse_del() when done
+ * @param progname name to be associated with the option parser
+ * @param arg_summary short list of optional command line options and arguments
+ * @return pointer to new context, NULL if something went wrong
+ * @warning the progname and arg_summary arguments, if not NULL, must be valid for the entire lifecycle of the option parser!
+ */
 optparse_t *optparse_new(const char *progname, const char *arg_summary);
+
+/**
+ * @brief Create a new options parser context, remeber to free it using optparse_del() when done
+ * @param progname name to be associated with the option parser
+ * @param arg_summary short list of optional command line options and arguments, can be NULL if not relevant
+ * @param help longer description of the command, can be NULL if not relevant.
+ * @return pointer to new context, NULL if something went wrong
+ * @warning the progname, arg_summary and help arguments, if not NULL, must be valid for the entire lifecycle of the option parser!
+ */
+optparse_t *optparse_new_ex(const char *progname, const char *arg_summary, const char *help);
+
+/**
+ * @brief Release the memory for the given option parser object
+ * @param parser pointer to valid option parser obtained by calling optparse_new() or optparse_new_ex()
+ */
 void optparse_del(optparse_t *parser);
 
 int optparse_parse(optparse_t *parser, int argc, const char *argv[]);
