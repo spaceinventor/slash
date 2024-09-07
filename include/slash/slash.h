@@ -64,6 +64,7 @@
 		.func  = _func,\
 		.completer  = _completer,\
 		.args  = _args,\
+		.help = _help, \
         .next = {NULL},  /* Next pointer in case the user wants to implement custom ordering within or across APMs.
 							It should not required by the default implementation. */\
 	};
@@ -125,6 +126,7 @@ struct slash_command {
 	char *name;
 	const slash_func_t func;
 	const char *args;
+	const char *help;
 	const slash_completer_func_t completer;
 	/* Next pointer in case the user wants to implement custom ordering within or across APMs.
 		It should not required by the default implementation. */
@@ -180,8 +182,12 @@ struct slash {
     /* Command list */
     struct slash_command * cmd_list;
 
-	/* Completions */
-	bool in_completion;
+	/* Allow calling complete functions while already in in one of those functions.
+	 * Use case: when completing "help", you only want to complete the *name* of commands to get help for
+	 * BUT while completing "watch" (or watch-like commands), you want to carry on completing as much as possible,
+	 * for instance, typing: "w<TAB>g<TAB>s<TAB>" would result in the completed command line "watch get serial0" in 6 keystrokes
+	 */
+	bool complete_in_completion;
 };
 
 /**

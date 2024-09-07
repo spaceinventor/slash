@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include <slash/slash.h>
 #include <slash/dflopt.h>
@@ -99,7 +100,7 @@ slash_command(confirm, slash_builtin_confirm, "", "Block until user confirmation
 static int slash_builtin_watch(struct slash *slash)
 {
 
-	unsigned int interval = slash_dfl_timeout;
+	unsigned int interval = 1000;
 	unsigned int count = 0;
 
     optparse_t * parser = optparse_new("watch", "<command...>");
@@ -130,15 +131,26 @@ static int slash_builtin_watch(struct slash *slash)
 		char cmd_exec[slash->line_size];
 		strncpy(cmd_exec, line, slash->line_size);
 
+		/* Read time it takes to execute command */
+		struct timespec time_before, time_after;
+		clock_gettime(CLOCK_MONOTONIC, &time_before);
+
 		/* Execute command */
 		slash_execute(slash, cmd_exec);
+
+		clock_gettime(CLOCK_MONOTONIC, &time_after);
 
 		if ((count > 0) && (count-- == 1)) {
 				break;
 		}		
 
+		/* Calculate remaining time to ensure execution is running no more often than what interval dictates */
+		unsigned int elapsed = (time_after.tv_sec-time_before.tv_sec)*1000 + (time_after.tv_nsec-time_before.tv_nsec)/1000000;
+		unsigned int remaining = 0;
+		if (interval > elapsed) remaining = interval - elapsed;
+
 		/* Delay (press enter to exit) */
-		if (slash_wait_interruptible(slash, interval) != 0)
+		if (slash_wait_interruptible(slash, remaining) != 0)
 			break;
 
 	}

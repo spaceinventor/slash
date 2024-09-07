@@ -347,7 +347,12 @@ void slash_command_usage(struct slash *slash, struct slash_command *command)
 {
 	const char *args = command->args ? command->args : "";
 	const char *type = command->func ? "usage" : "group";
-	slash_printf(slash, "%s: %s %s\n", type, command->name, args);
+	const char *help = command->help;
+	if(NULL != help) {
+		slash_printf(slash, "%s: %s %s\n\n%s\n\n", type, command->name, args, help);
+	} else {
+		slash_printf(slash, "%s: %s %s\n", type, command->name, args);
+	}
 }
 
 void slash_command_description(struct slash *slash, struct slash_command *command)
@@ -999,6 +1004,7 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_tail = slash->history;
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
+	slash->complete_in_completion = true;
 
 	slash_list_init();
 
@@ -1036,7 +1042,7 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
     /* Empty command list */
     slash->cmd_list = 0;
 
-	slash->in_completion = false;
+	slash->complete_in_completion = true;
 
 	tcgetattr(slash->fd_read, &slash->original);
 }
