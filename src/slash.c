@@ -693,14 +693,12 @@ int slash_refresh(struct slash *slash, int printtime)
 	int timelen = 0;
 	if (printtime) {
 		char buf[30];
-#ifdef SLASH_TIMESTAMP
 		struct timeval tmnow;
 		struct tm *tm;
 		gettimeofday(&tmnow, NULL);
 		tm = localtime(&tmnow.tv_sec);
 		strftime(buf, 30, " @ %H:%M:%S d. %d/%m/%y", tm);
 		timelen = 21;
-#endif
 
 		/* Write the prompt and the current buffer content */
 		slash_write(slash, "\033[1;30m", 7);
