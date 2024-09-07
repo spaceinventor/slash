@@ -19,10 +19,6 @@ if meson.get_compiler('c').has_header('sys/select.h') and host_machine.system() 
 	conf.set('SLASH_HAVE_SELECT', true)
 endif
 
-if get_option('timestamp') == true
-	conf.set('SLASH_TIMESTAMP', true)
-endif
-
 slash_config_h = configure_file(output: 'slash_config.h', configuration: conf)
 
 slash_inc = include_directories('.', 'include')
