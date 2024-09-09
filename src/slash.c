@@ -50,10 +50,6 @@
 
 #include "builtins.h"
 
-/* Configuration */
-#define SLASH_ARG_MAX		16	/* Maximum number of arguments */
-#define SLASH_SHOW_MAX		25	/* Maximum number of commands to list */
-
 /* Terminal codes */
 #define ESC '\x1b'
 #define DEL '\x7f'

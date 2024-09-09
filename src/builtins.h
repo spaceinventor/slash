@@ -3,12 +3,17 @@
 
 #include <sys/types.h>
 
+/* Configuration */
+#define SLASH_ARG_MAX		16	/* Maximum number of arguments */
+#define SLASH_SHOW_MAX		25	/* Maximum number of commands to list */
+
 /* Declarations for required implementation functions in slash.c */
 void slash_command_usage(struct slash *slash, struct slash_command *command);
 char *slash_history_increment(struct slash *slash, char *ptr);
 int slash_putchar(struct slash *slash, char c);
 struct slash_command * slash_command_find(struct slash *slash, char *line, size_t linelen, char **args);
 void slash_command_description(struct slash *slash, struct slash_command *command);
+int slash_build_args(char *args, char **argv, int *argc);
 
 /* Define and initialize section variables */
 /* __attribute__((visibility("hidden"))) prevents the section symbols from linking with
