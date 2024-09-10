@@ -131,7 +131,7 @@ handle_short_opt(optparse_t * parser, char c, char c2) {
 	for (opt = parser->options; opt; opt = opt->next) {
 		if (opt->short_opt && c == opt->short_opt) {
 			if (opt->arg_desc) {
-				if (parser->argi >= parser->argc) {
+				if (parser->argi > parser->argc) {
 					fprintf(stderr, "%s: \"-%c\" requires an argument\n",
 							parser->progname, c);
 					return 0;
