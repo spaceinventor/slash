@@ -229,7 +229,8 @@ void slash_complete(struct slash *slash)
                 char *argv[SLASH_ARG_MAX];
                 slash->argv = argv;
                 char args[slash->line_size];
-                strcpy(args, slash->buffer);
+                /* Skip the found command name when building the command line */
+                strcpy(args, slash->buffer + cmd_len + 1);
                 slash_build_args(args, slash->argv, &slash->argc);
                 completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
             }
