@@ -217,7 +217,7 @@ void slash_complete(struct slash *slash)
             slash->cursor = slash->length = strlen(slash->buffer);
         }
         if (completion->cmd->completer) {
-            /* Call the matching command completer with the rest of the buffer but only the current 
+            /* Call the matching command completer with the rest of the buffer but only if the current 
                completer allows it */
             if(slash->complete_in_completion == true) {
                 if(slash->length == strlen(completion->cmd->name)) {
