@@ -161,7 +161,9 @@ int optparse_parse(optparse_t * parser, int argc, const char * argv[]) {
 	parser->argi = 0;
 	while (parser->argi < parser->argc) {
 		const char * s = argv[parser->argi++];
-
+		if(!s) {
+			break;
+		}
 		if (s[0] == '-' && s[1] == '-') {
 			if (!s[2])
 				break;
