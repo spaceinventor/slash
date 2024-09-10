@@ -9,3 +9,5 @@ builddir
 *.map
 *.sym
 
+subprojects/*
+!subprojects/*.wrap
