@@ -44,3 +44,6 @@ pkg.generate(slash_lib, filebase: 'slash')
 install_subdir('include', install_dir : '.')
 install_headers(slash_config_h, install_dir : 'include')
 
+if not meson.is_subproject()
+	subdir('test')
+endif
