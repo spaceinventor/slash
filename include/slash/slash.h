@@ -37,6 +37,9 @@
 #define SLASH_SECTION "slash"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Helper macros */
 #define slash_offsetof(type, member) ((size_t) &((type *)0)->member)
@@ -62,9 +65,9 @@
 	const struct slash_command _ident = {\
 		.name  = _name,\
 		.func  = _func,\
-		.completer  = _completer,\
 		.args  = _args,\
 		.help = _help, \
+		.completer  = _completer,\
         .next = {NULL},  /* Next pointer in case the user wants to implement custom ordering within or across APMs.
 							It should not required by the default implementation. */\
 	};
@@ -123,7 +126,7 @@ typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 /* Command struct */
 struct slash_command {
 	/* Static data */
-	char *name;
+	const char *name;
 	const slash_func_t func;
 	const char *args;
 	const char *help;
@@ -306,5 +309,9 @@ void slash_load_cmds_from_section(struct slash_command *start, struct slash_comm
 	extern struct slash_command __stop_##section; \
 	struct slash_command *section##_start = &__start_##section; \
 	struct slash_command *section##_stop = &__stop_##section;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SLASH_H_ */
