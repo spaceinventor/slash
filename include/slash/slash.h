@@ -219,6 +219,12 @@ typedef char *(*slash_process_cmd_line_hook_t)(const char *line);
  */
 extern slash_process_cmd_line_hook_t slash_process_cmd_line_hook;
 
+/**
+ * @brief Set this variable to a function if you wish to execute general completions after specific completions have been executed
+ * @see slash_completer_func_t
+ */
+extern slash_completer_func_t slash_global_completer;
+
 int slash_execute(struct slash *slash, char *line);
 
 int slash_loop(struct slash *slash);
