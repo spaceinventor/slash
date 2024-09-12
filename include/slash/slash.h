@@ -211,7 +211,7 @@ void slash_on_execute_hook(const char *line);
 
 typedef char *(*slash_process_cmd_line_hook_t)(const char *line);
 /**
- * @brief Set this variable to a function if you whish to modify the command line about to be executed
+ * @brief Set this variable to a function if you wish to modify the command line about to be executed
  * 
  * @param line the slash line about to be executed
  * @return a malloc'ed pointer to the processed command line, this will be free()'d for you, NULL is a valid
