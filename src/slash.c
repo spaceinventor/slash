@@ -372,7 +372,7 @@ int slash_execute(struct slash *slash, char *line)
 {
 	struct slash_command *command;
 	char *args, *argv[SLASH_ARG_MAX];
-	char *processed_cmd_line, *line_to_use;
+	char *processed_cmd_line = NULL, *line_to_use;
 	int ret, argc = 0;
 
 	/* Skip comments */
