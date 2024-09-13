@@ -366,10 +366,13 @@ __attribute__((weak)) int slash_prompt(struct slash *slash) {
 	return 0;
 }
 
+slash_process_cmd_line_hook_t slash_process_cmd_line_hook  = NULL;
+
 int slash_execute(struct slash *slash, char *line)
 {
 	struct slash_command *command;
 	char *args, *argv[SLASH_ARG_MAX];
+	char *processed_cmd_line = NULL, *line_to_use;
 	int ret, argc = 0;
 
 	/* Skip comments */
@@ -377,9 +380,22 @@ int slash_execute(struct slash *slash, char *line)
 		return SLASH_SUCCESS;
 	}
 
-	command = slash_command_find(slash, line, strlen(line), &args);
+	if(NULL != slash_process_cmd_line_hook) {
+		processed_cmd_line = slash_process_cmd_line_hook(line);
+	}
+
+	if (processed_cmd_line != NULL) {
+		line_to_use = processed_cmd_line;
+	} else {
+		line_to_use = line;
+	}
+
+	command = slash_command_find(slash, line_to_use, strlen(line_to_use), &args);
 	if (!command) {
+		/* Print the original line here, not the possibly processed one */
 		slash_printf(slash, "No such command: %s\n", line);
+		/* Yes, processed_cmd_line maybe NULL, but the man page says it's ok, so we save an "if" statement */
+		free(processed_cmd_line);
 		return -ENOENT;
 	}
 
@@ -387,12 +403,16 @@ int slash_execute(struct slash *slash, char *line)
 	slash_on_execute_hook(line);
 
 	if (!command->func) {
+		/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
+		free(processed_cmd_line);
 		return -EINVAL;
 	}
 
 	/* Build args */
 	if (slash_build_args(args, argv, &argc) < 0) {
 		slash_printf(slash, "Mismatched quotes\n");
+		/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
+		free(processed_cmd_line);
 		return -EINVAL;
 	}
 
@@ -407,9 +427,13 @@ int slash_execute(struct slash *slash, char *line)
 	slash->argv = argv;
 	ret = command->func(slash);
 
+
+
 	if (ret == SLASH_EUSAGE)
 		slash_command_usage(slash, command);
 
+	/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
+	free(processed_cmd_line);
 	return ret;
 }
 
