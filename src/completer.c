@@ -143,6 +143,8 @@ struct completion_entry {
     SLIST_ENTRY(completion_entry) list;
 };
 
+slash_completer_func_t slash_global_completer = NULL;
+
 /**
  * @brief For tab auto completion, calls other completion functions when matched command has them
  *
@@ -233,6 +235,9 @@ void slash_complete(struct slash *slash)
                 strcpy(args, slash->buffer + cmd_len + 1);
                 slash_build_args(args, slash->argv, &slash->argc);
                 completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
+                if (slash_global_completer) {
+                    slash_global_completer(slash, slash->buffer + cmd_len + 1);
+                }
             }
         }
     } else if(matches > 1) {
@@ -244,6 +249,10 @@ void slash_complete(struct slash *slash)
             strncpy(slash->buffer, completion->cmd->name, prefix_len);
             slash->buffer[prefix_len] = '\0';
             slash->cursor = slash->length = strlen(slash->buffer);
+        }
+    } else {
+        if (slash_global_completer) {
+            slash_global_completer(slash, slash->buffer);
         }
     }
     /* Free up the completion list we built up earlier */
