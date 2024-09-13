@@ -215,6 +215,23 @@ char *slash_readline(struct slash *slash);
  */
 void slash_on_execute_hook(const char *line);
 
+
+typedef char *(*slash_process_cmd_line_hook_t)(const char *line);
+/**
+ * @brief Set this variable to a function if you wish to modify the command line about to be executed
+ * 
+ * @param line the slash line about to be executed
+ * @return a malloc'ed pointer to the processed command line, this will be free()'d for you, NULL is a valid
+ * return value and will cause the original line to be used as-is.
+ */
+extern slash_process_cmd_line_hook_t slash_process_cmd_line_hook;
+
+/**
+ * @brief Set this variable to a function if you wish to execute general completions after specific completions have been executed
+ * @see slash_completer_func_t
+ */
+extern slash_completer_func_t slash_global_completer;
+
 int slash_execute(struct slash *slash, char *line);
 
 int slash_loop(struct slash *slash);

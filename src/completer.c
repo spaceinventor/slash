@@ -9,6 +9,8 @@
 #include <dirent.h>
 #include <sys/queue.h>
 
+#include "builtins.h"
+
 static void ls_appended(const char* tok, const char* app) {
     char cmd[PATH_MAX + 3];
 
@@ -141,6 +143,8 @@ struct completion_entry {
     SLIST_ENTRY(completion_entry) list;
 };
 
+slash_completer_func_t slash_global_completer = NULL;
+
 /**
  * @brief For tab auto completion, calls other completion functions when matched command has them
  *
@@ -215,7 +219,7 @@ void slash_complete(struct slash *slash)
             slash->cursor = slash->length = strlen(slash->buffer);
         }
         if (completion->cmd->completer) {
-            /* Call the matching command completer with the rest of the buffer but only the current 
+            /* Call the matching command completer with the rest of the buffer but only if the current 
                completer allows it */
             if(slash->complete_in_completion == true) {
                 if(slash->length == strlen(completion->cmd->name)) {
@@ -224,7 +228,16 @@ void slash_complete(struct slash *slash)
                     slash->cursor++;
                     slash->length++;
                 }
+                char *argv[SLASH_ARG_MAX];
+                slash->argv = argv;
+                char args[slash->line_size];
+                /* Skip the found command name when building the command line */
+                strcpy(args, slash->buffer + cmd_len + 1);
+                slash_build_args(args, slash->argv, &slash->argc);
                 completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
+                if (slash_global_completer) {
+                    slash_global_completer(slash, slash->buffer + cmd_len + 1);
+                }
             }
         }
     } else if(matches > 1) {
@@ -236,6 +249,10 @@ void slash_complete(struct slash *slash)
             strncpy(slash->buffer, completion->cmd->name, prefix_len);
             slash->buffer[prefix_len] = '\0';
             slash->cursor = slash->length = strlen(slash->buffer);
+        }
+    } else {
+        if (slash_global_completer) {
+            slash_global_completer(slash, slash->buffer);
         }
     }
     /* Free up the completion list we built up earlier */
