@@ -281,6 +281,7 @@ void slash_path_completer(struct slash * slash, char * token) {
     struct dirent * entry;
 
     if (token[0]=='\0') {
+        printf("\n");
         ls_appended(NULL, NULL);
         return;
     }
@@ -375,6 +376,7 @@ void slash_path_completer(struct slash * slash, char * token) {
             token[subdir_idx+prefix_idx+1] = 0;
             slash->length = (token - slash->buffer) + strlen(token);
             slash->cursor = slash->length;
+            printf("\n");
             ls_appended(token, "* -d");
             break;
         }
