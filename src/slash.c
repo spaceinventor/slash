@@ -267,7 +267,7 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 		/* Find an exact match */
 		if (strncmp(line, cmd->name, cmd_length) == 0) {
 			/* Now, let's see if it is an actual exact match, or simply a prefix match 
-			as a prefix match can list to "listttt" being interpreted as the valid "list" command
+			as a prefix match can lead to "listttt" being interpreted as the valid "list" command
 			*/
 			if (linelen > cmd_length) {
 				/* If the input > match, check that the next character is a separator */
