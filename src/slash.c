@@ -119,7 +119,7 @@ static int slash_rawmode_enable(struct slash *slash)
 
 	raw = slash->original;
 	raw.c_cflag |= (CS8);
-	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN);
 	raw.c_cc[VMIN] = 1;
 	raw.c_cc[VTIME] = 0;
 
@@ -754,12 +754,6 @@ static void slash_delete(struct slash *slash)
 	}
 }
 
-void slash_clear_screen(struct slash *slash)
-{
-	const char *esc = ESCAPE("H") ESCAPE("2J");
-	slash_write(slash, esc, strlen(esc));
-}
-
 static void slash_backspace(struct slash *slash)
 {
 	if (slash->cursor > 0) {
@@ -818,6 +812,19 @@ static void slash_swap(struct slash *slash)
 			slash->cursor++;
 	}
 }
+
+
+void slash_clear_screen(struct slash *slash) {
+	const char *esc = ESCAPE("H") ESCAPE("2J");
+	slash_write(slash, esc, strlen(esc));
+}
+
+void slash_sigint(struct slash *slash, int signum) {
+	slash->signal = signum;
+	slash_reset(slash);	
+	slash_refresh(slash, 0);
+}
+
 #include <stdlib.h>
 char *slash_readline(struct slash *slash)
 {
