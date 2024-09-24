@@ -149,6 +149,7 @@ struct slash {
 	int fd_read;
 	slash_waitfunc_t waitfunc;
 	bool use_activate;
+	int signal;
 
 	/* Line editing */
 	size_t line_size;
@@ -207,6 +208,8 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 void slash_destroy(struct slash *slash);
 
 char *slash_readline(struct slash *slash);
+
+void slash_sigint(struct slash *slash, int signum);
 
 /**
  * @brief Implement this function to do something with the current line (logging, etc)

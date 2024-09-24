@@ -119,7 +119,7 @@ static int slash_rawmode_enable(struct slash *slash)
 
 	raw = slash->original;
 	raw.c_cflag |= (CS8);
-	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN);
 	raw.c_cc[VMIN] = 1;
 	raw.c_cc[VTIME] = 0;
 
@@ -261,19 +261,31 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 
 	struct slash_command * cmd;
 	slash_list_iterator i = {};
+	int cmd_length;
 	while ((cmd = slash_list_iterate(&i)) != NULL) {
-
+		cmd_length = strlen(cmd->name);
 		/* Find an exact match */
-		if (strncmp(line, cmd->name, strlen(cmd->name)) != 0)
+		if (strncmp(line, cmd->name, cmd_length) == 0) {
+			/* Now, let's see if it is an actual exact match, or simply a prefix match 
+			as a prefix match can lead to "listttt" being interpreted as the valid "list" command
+			*/
+			if (linelen > cmd_length) {
+				/* If the input > match, check that the next character is a separator */
+				if(line[cmd_length] != ' ') {
+					continue;
+				}
+			}
+		} else {
 			continue;
+		}
 
 		/* Update the max-length match */
-		if (strlen(cmd->name) > max_matchlen) {
+		if (cmd_length > max_matchlen) {
 			max_match_cmd = cmd;
-			max_matchlen = strlen(cmd->name);
+			max_matchlen = cmd_length;
 
 			/* Calculate arguments position */
-			*args = line + strlen(cmd->name);
+			*args = line + cmd_length;
 		}
 	}
 
@@ -740,12 +752,6 @@ static void slash_delete(struct slash *slash)
 	}
 }
 
-void slash_clear_screen(struct slash *slash)
-{
-	const char *esc = ESCAPE("H") ESCAPE("2J");
-	slash_write(slash, esc, strlen(esc));
-}
-
 static void slash_backspace(struct slash *slash)
 {
 	if (slash->cursor > 0) {
@@ -804,6 +810,19 @@ static void slash_swap(struct slash *slash)
 			slash->cursor++;
 	}
 }
+
+
+void slash_clear_screen(struct slash *slash) {
+	const char *esc = ESCAPE("H") ESCAPE("2J");
+	slash_write(slash, esc, strlen(esc));
+}
+
+void slash_sigint(struct slash *slash, int signum) {
+	slash->signal = signum;
+	slash_reset(slash);	
+	slash_refresh(slash, 0);
+}
+
 #include <stdlib.h>
 char *slash_readline(struct slash *slash)
 {
