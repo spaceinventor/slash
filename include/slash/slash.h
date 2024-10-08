@@ -144,6 +144,7 @@ struct slash {
 	slash_waitfunc_t waitfunc;
 	bool use_activate;
 	int signal;
+	int busy;
 
 	/* Line editing */
 	size_t line_size;

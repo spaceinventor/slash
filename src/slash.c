@@ -387,6 +387,8 @@ int slash_execute(struct slash *slash, char *line)
 	char *processed_cmd_line = NULL, *line_to_use;
 	int ret, argc = 0;
 
+	slash->busy = 1;
+
 	/* Skip comments */
 	if (line[0] == '#') {
 		return SLASH_SUCCESS;
@@ -446,6 +448,9 @@ int slash_execute(struct slash *slash, char *line)
 
 	/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
 	free(processed_cmd_line);
+
+	slash->busy = 0;
+
 	return ret;
 }
 
