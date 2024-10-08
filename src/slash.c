@@ -388,6 +388,7 @@ int slash_execute(struct slash *slash, char *line)
 	int ret, argc = 0;
 
 	slash->busy = 1;
+	slash->signal = 0;
 
 	/* Skip comments */
 	if (line[0] == '#') {
@@ -825,9 +826,12 @@ void slash_clear_screen(struct slash *slash) {
 }
 
 void slash_sigint(struct slash *slash, int signum) {
-	slash->signal = signum;
-	slash_reset(slash);	
-	slash_refresh(slash, 0);
+	if (slash->busy) {
+		slash->signal = signum;
+	} else {
+		slash_reset(slash);	
+		slash_refresh(slash, 0);
+	}
 }
 
 #include <stdlib.h>
