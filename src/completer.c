@@ -214,7 +214,7 @@ void slash_complete(struct slash *slash)
         cmd_len = strlen(completion->cmd->name);
         if(slash->length < strlen(completion->cmd->name)) {
             /* The buffer uniquely completes to a longer command */
-            strncpy(slash->buffer, completion->cmd->name, cmd_len);
+            strncpy(slash->buffer, completion->cmd->name, strlen(slash->buffer));
             slash->buffer[cmd_len] = '\0';
             slash->cursor = slash->length = strlen(slash->buffer);
         }
