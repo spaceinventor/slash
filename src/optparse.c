@@ -132,17 +132,21 @@ handle_short_opt(optparse_t * parser, char c, char c2) {
 		if (opt->short_opt && c == opt->short_opt) {
 			if (opt->arg_desc) {
 				if (parser->argi > parser->argc) {
-					fprintf(stderr, "%s: \"-%c\" requires an argument\n",
-							parser->progname, c);
+					fprintf(stderr, "%s: \"-%c\" requires an argument\n", parser->progname, c);
 					return 0;
 				}
 				if (c2 == '\0') {
+					if (parser->argi >= parser->argc) {
+						fprintf(stderr, "%s: \"-%c\" requires an argument\n", parser->progname, c);
+						return 0;
+					}
 					return opt->func(opt, parser->argv[parser->argi++]);
+				} else {
+					return opt->func(opt, parser->argv[parser->argi - 1] + 2);
 				}
-				return opt->func(opt, parser->argv[parser->argi - 1] + 2);
-
-			} else
+			} else {
 				return opt->func(opt, NULL);
+			}
 		}
 	}
 
