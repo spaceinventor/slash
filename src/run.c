@@ -3,6 +3,16 @@
 #include <slash/optparse.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
+
+
+/* Implement this function to set environment variables for example */
+__attribute__((weak)) void slash_on_run_pre_hook(const char * const filename, void ** ctx_for_post) {  /* Set up environemnt variables for "run" command. */
+}
+
+/* Implement this function to clear environment variables for example */
+__attribute__((weak)) void slash_on_run_post_hook(const char * const filename, void * ctx) {
+}
 
 int slash_run(struct slash *slash, char * filename, int printcmd) {
 
@@ -21,6 +31,10 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
         printf("  File %s not found\n", filename);
 		return SLASH_EIO;
     }
+
+
+    void *ctx_for_post = NULL;
+    slash_on_run_pre_hook(filename_local, &ctx_for_post);
 
     char line[512];
     int ret = SLASH_SUCCESS;
@@ -49,6 +63,8 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
     }
 
     fclose(stream);
+
+    slash_on_run_post_hook(filename_local, ctx_for_post);
 
     return ret;
 
