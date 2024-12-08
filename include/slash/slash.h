@@ -213,6 +213,23 @@ void slash_sigint(struct slash *slash, int signum);
 void slash_on_execute_hook(const char *line);
 
 
+/**
+ * @brief Will be called before a file is executed by "run <file>", implement it to set environment variables for example.
+ * 
+ * @param filename name of the file to be executed.
+ * @param ctx_for_post Assignable context pointer which will be passed to the corresponding post_hook call. If it is malloc, it should be freed in the post-hook.
+ */
+void slash_on_run_pre_hook(const char * const filename, void ** ctx_for_post);
+
+/**
+ * @brief Will be called after a file has been executed by "run <file>", implement it to set clear variables for example.
+ *
+ * @param filename name of the file which was executed.
+ * @param ctx customizable context from corresponding pre-hook.
+ */
+void slash_on_run_post_hook(const char * const filename, void * ctx);
+
+
 typedef char *(*slash_process_cmd_line_hook_t)(const char *line);
 /**
  * @brief Set this variable to a function if you wish to modify the command line about to be executed
