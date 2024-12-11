@@ -97,5 +97,8 @@ static int cmd_run(struct slash *slash) {
     return res;
 
 }
-slash_command_completer(run, cmd_run, slash_path_completer, "<file>", "Runs commands in specified file");
+slash_command_completer(run, cmd_run, slash_path_completer, "<file>", "Runs commands in specified file\n"\
+    "Sets the following environemnt variables during execution:\n\n"\
+    "- __FILE__ to the name of the executed file\n"\
+    "- __FILE_DIR__ to the directory containing the executed file, useful for running other files located relative to __FILE__");
 	
