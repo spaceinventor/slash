@@ -4,7 +4,7 @@
 #include <sys/types.h>
 
 /* Configuration */
-#define SLASH_ARG_MAX		16	/* Maximum number of arguments */
+#define SLASH_ARG_MAX		32	/* Maximum number of arguments */
 #define SLASH_SHOW_MAX		25	/* Maximum number of commands to list */
 
 /* Declarations for required implementation functions in slash.c */
