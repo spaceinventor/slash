@@ -97,8 +97,9 @@ static int cmd_run(struct slash *slash) {
     return res;
 
 }
-slash_command_completer(run, cmd_run, slash_path_completer, "<file>", "Runs commands in specified file\n"\
-    "Sets the following environemnt variables during execution:\n\n"\
-    "- __FILE__ to the name of the executed file\n"\
+slash_command_completer(run, cmd_run, slash_path_completer, "<file>", "Runs commands in the specified file. \n"\
+    "Sets the following environment variables during execution:\n\n"\
+    "- __FILE__ to the path and name of the executed file\n"\
     "- __FILE_DIR__ to the directory containing the executed file, useful for running other files located relative to __FILE__");
-	
+/* TODO: Documenting __FILE__ and __FILE_DIR__ is incorrect.
+    They are implemented in hooks, but right now we don't have a way to document them there. */
