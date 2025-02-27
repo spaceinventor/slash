@@ -72,7 +72,10 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
 
 static int cmd_run(struct slash *slash) {
 
+    int verbosity = 2;
+
     optparse_t * parser = optparse_new("run", "<filename>");
+    optparse_add_int(parser, 'v', "verbosity", "NUM", 0, &verbosity, "verbosity (default = 2, max = 2)");
     optparse_add_help(parser);
 
     int argi = optparse_parse(parser, slash->argc - 1, (const char **) slash->argv + 1);
@@ -88,11 +91,15 @@ static int cmd_run(struct slash *slash) {
 		return SLASH_EINVAL;
 	}
 
-	char * name = slash->argv[argi];
+	char * const name = slash->argv[argi];
 
-    printf("Running %s\n", name);
+    if (verbosity >= 1) {
+        printf("Running %s\n", name);
+    }
 
-    int res = slash_run(slash, name, 1);
+    const bool printcmd = verbosity >= 2;
+
+    const int res = slash_run(slash, name, printcmd);
     optparse_del(parser);
     return res;
 
