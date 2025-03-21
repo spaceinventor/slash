@@ -48,7 +48,7 @@ int slash_run(struct slash *slash, char * filename, int printcmd) {
             continue;
 
         /* Skip comments */
-        if (line[0] == '/') {
+        if (line[0] == '#') {
             continue;
         }
 
