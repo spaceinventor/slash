@@ -5,7 +5,6 @@
 #include <time.h>
 
 #include <slash/slash.h>
-#include <slash/dflopt.h>
 #include <slash/optparse.h>
 #include <slash/completer.h>
 
