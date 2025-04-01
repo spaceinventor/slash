@@ -1,5 +1,9 @@
 #pragma once
 
+/* TODO: determine when to enable this */
+#if 0
+#pragma GCC warning "dflopt.h is deprecated, use  #include <apm/csh_api.h> instead"
+#endif
 #include <slash/slash.h>
 #include <slash/optparse.h>
 
