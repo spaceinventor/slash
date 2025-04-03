@@ -7,6 +7,7 @@
 
 #include <slash/optparse.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,6 +54,7 @@ struct optparse_opt {
 		unsigned num_base;
 		int set_value;
 	} spec;
+	bool should_free_data;
 };
 
 optparse_t *
@@ -85,6 +87,9 @@ void optparse_del(optparse_t * parser) {
 
 	while ((opt = parser->options)) {
 		parser->options = opt->next;
+		if(opt->should_free_data) {
+			free(opt->data);
+		}
 		free(opt);
 	}
 	free(parser);
@@ -208,7 +213,42 @@ optparse_opt_new(optparse_t * parser,
 	opt->help = help;
 	opt->func = func;
 	opt->data = data;
+	opt->should_free_data = false;
 
+	*parser->last_option = opt;
+	parser->last_option = &opt->next;
+
+	return opt;
+}
+
+struct custom_opt_ctx {
+	optparse_custom_func_t func;
+	void *org_data;
+};
+
+static int optparse_custom_func_trampoline(optparse_opt_t * opt, const char * arg) {
+	struct custom_opt_ctx * custom_ctx = opt->data;
+	return custom_ctx->func(custom_ctx->org_data, arg);
+}
+
+optparse_opt_t *optparse_add_custom(optparse_t * parser, int short_opt, const char * long_opt, const char * arg_desc, const char * help, optparse_custom_func_t func, void * data) {
+	optparse_opt_t * opt;
+	struct custom_opt_ctx *custom_ctx = calloc(1, sizeof(*custom_ctx));
+	custom_ctx->func = func;
+	custom_ctx->org_data = data;
+	opt = malloc(sizeof(*opt));
+	memset(opt, 0, sizeof(*opt));
+
+	opt->parser = parser;
+	opt->short_opt = short_opt;
+	opt->long_opt = long_opt;
+	if (opt->long_opt)
+		opt->long_opt_len = strlen(opt->long_opt);
+	opt->arg_desc = arg_desc;
+	opt->help = help;
+	opt->func = optparse_custom_func_trampoline;
+	opt->data = custom_ctx;
+	opt->should_free_data = true;
 	*parser->last_option = opt;
 	parser->last_option = &opt->next;
 
