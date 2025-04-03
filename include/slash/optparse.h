@@ -55,9 +55,6 @@ optparse_opt_t *optparse_add_double(optparse_t *parser, int short_opt, const cha
 
 optparse_opt_t *optparse_add_string(optparse_t *parser, int short_opt, const char *long_opt, const char *arg_desc, char **ptr, char *help);
 
-optparse_opt_t *optparse_add_string(optparse_t *parser, int short_opt, const char *long_opt, const char *arg_desc, char **ptr, char *help);
-
-
 /**
  * @brief interface to be implemented for custom option parsers
  * 
