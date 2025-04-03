@@ -55,4 +55,30 @@ optparse_opt_t *optparse_add_double(optparse_t *parser, int short_opt, const cha
 
 optparse_opt_t *optparse_add_string(optparse_t *parser, int short_opt, const char *long_opt, const char *arg_desc, char **ptr, char *help);
 
+optparse_opt_t *optparse_add_string(optparse_t *parser, int short_opt, const char *long_opt, const char *arg_desc, char **ptr, char *help);
+
+
+/**
+ * @brief interface to be implemented for custom option parsers
+ * 
+ * This function will be called by the optparse framework when it processes an
+ * option for which this custom option value function was registered
+ * @param data an opaque pointer where the parsed option value must be stored
+ * @param arg the part of the command line containing the option value as a string to be parsed
+ */
+typedef int (*optparse_custom_func_t)(void *data, const char * arg);
+
+/**
+ * @brief Register an option with a custom parser (see the "func" param)
+ * @param parser pointer to valid optparse object the option will be attached to
+ * @param short_opt single character option (for example: 'c' for the corresponding "-c" cmd line option). Set to '\0' if you do not want a short option
+ * @param long_opt string option (for example "test" for the corresponding "--test" cmd line option). Set to NULL if you do not want a long option
+ * @param arg_desc string describing the argument (will be shown when help is invoked), may be NULL
+ * @param help string describing waht this option is/does
+ * @param func ptr to a cutom option value parser, see the optparse_custom_func_t typedef documentation
+ * @param data opaque pointer to a valid memory where the "func" above will store the parsed option value
+ * @return reference to newly created optparse_opt_t object
+ */
+optparse_opt_t *optparse_add_custom(optparse_t * parser, int short_opt, const char * long_opt, const char * arg_desc, const char * help, optparse_custom_func_t func, void * data);
+
 #endif /* _OPTPARSE_H */
