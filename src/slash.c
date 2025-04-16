@@ -1039,8 +1039,8 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 		return NULL;
 	}
 
-	slash->history_size = history_size;
-	slash->history = calloc(1, slash->history_size);
+	slash->history_size = history_size - 1;
+	slash->history = calloc(1, history_size);
 	if (!slash->history) {
 		free(slash->buffer);
 		free(slash);
