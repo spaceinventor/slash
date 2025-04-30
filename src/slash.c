@@ -883,6 +883,18 @@ char *slash_readline(struct slash *slash)
 				slash->cursor = 0;
 			} else if (esc[0] == '[' && esc[1] == 'F') {
 				slash->cursor = slash->length;
+			} else if (esc[0] == 'O') {
+				/* If the first escape character is 'O', we're likely in a TMUX session.
+				The HOME and END keys (unless remapped by the user in their tmux config) send "OH" and "OF" respetively
+				so we handle those too
+				*/
+				if(NULL != getenv("TMUX")) {
+					if (esc[1] == 'H') {
+						slash->cursor = 0;
+					} else if (esc[1] == 'F') {
+						slash->cursor = slash->length;
+					}
+				}
 			} else if (esc[0] == '1' && esc[1] == '~') {
 				slash->cursor = 0;
 			} else if (esc[0] == '4' && esc[1] == '[') {
