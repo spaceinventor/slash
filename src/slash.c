@@ -225,6 +225,7 @@ int slash_wait_interruptible(struct slash *slash, unsigned int ms)
 
 int slash_printf(struct slash *slash, const char *format, ...)
 {
+	(void)slash;
 	int ret;
 	va_list args;
 
@@ -255,13 +256,14 @@ static bool slash_line_empty(char *line, size_t linelen)
 struct slash_command *
 slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 {
+	(void)slash;
 	/* Maximum length match */
 	size_t max_matchlen = 0;
 	struct slash_command *max_match_cmd = NULL;
 
 	struct slash_command * cmd;
 	slash_list_iterator i = {};
-	int cmd_length;
+	size_t cmd_length;
 	while ((cmd = slash_list_iterate(&i)) != NULL) {
 		cmd_length = strlen(cmd->name);
 		/* Find an exact match */
@@ -371,10 +373,12 @@ void slash_command_description(struct slash *slash, struct slash_command *comman
 
 /* Implement this function to perform logging for example */
 __attribute__((weak)) void slash_on_execute_hook(const char *line) {
+	(void)line;
 }
 
 /* A default no-prompt implementation is provided as a __attribute__((weak)) */
 __attribute__((weak)) int slash_prompt(struct slash *slash) {
+	(void)slash;
 	return 0;
 }
 
