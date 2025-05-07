@@ -181,10 +181,12 @@ void slash_complete(struct slash *slash)
         /* Do we have an exact match on the buffer ?*/
         if (cmd_match == 0) {
             if((cmd_len < len_to_compare_to && cmd->completer) || (len_to_compare_to <= cmd_len)) {
-                matches++;
                 completion = malloc(sizeof(struct completion_entry));
-                completion->cmd = cmd;
-                SLIST_INSERT_HEAD(&completions, completion, list);
+                if (completion) {
+                    matches++;
+                    completion->cmd = cmd;
+                    SLIST_INSERT_HEAD(&completions, completion, list);
+                }
             }
         }
     }
@@ -214,7 +216,7 @@ void slash_complete(struct slash *slash)
         cmd_len = strlen(completion->cmd->name);
         if(slash->length < strlen(completion->cmd->name)) {
             /* The buffer uniquely completes to a longer command */
-            strncpy(slash->buffer, completion->cmd->name, cmd_len);
+            strncpy(slash->buffer, completion->cmd->name, slash->line_size);
             slash->buffer[cmd_len] = '\0';
             slash->cursor = slash->length = strlen(slash->buffer);
         }
@@ -329,30 +331,36 @@ void slash_path_completer(struct slash * slash, char * token) {
     match_list_size = 16;
     match_count = 0;
     match_list = (char**) malloc(match_list_size * sizeof(char*));
-    
-    while ((entry = readdir(cwd_ptr)) != NULL) {
+    if(match_list) {    
+        while ((entry = readdir(cwd_ptr)) != NULL) {
 
-        /* compare token with filename */
-        char* pmatch = path_cmp(file_name_buf, entry->d_name);
+            /* compare token with filename */
+            char* pmatch = path_cmp(file_name_buf, entry->d_name);
 
-        if (pmatch != NULL && strcmp(pmatch, ".")) {
-            /* allocate more memory if necessary */
-            if (match_count+1 >= match_list_size) {
-                match_list_size += 16;
-                char** tmp = (char**) reallocarray(match_list, match_list_size, sizeof(char*));
-                if (tmp == NULL) {
+            if (pmatch != NULL && strcmp(pmatch, ".")) {
+                /* allocate more memory if necessary */
+                if (match_count+1 >= match_list_size) {
+                    match_list_size += 16;
+                    char** tmp = (char**) reallocarray(match_list, match_list_size, sizeof(char*));
+                    if (tmp == NULL) {
+                        printf("Unable to find all matches: No memory\n");
+                        break;
+                    }
+                    match_list = tmp;
+                }
+                char *match_tmp = (char*)malloc(strlen(pmatch) + 3);
+                if(match_tmp) {
+                    match_list[match_count] = match_tmp;
+                    strcpy(match_list[match_count], pmatch); 
+                    if (entry->d_type == DT_DIR) {
+                        strcat(match_list[match_count], "/");
+                    }
+                    match_count++;
+                } else {
                     printf("Unable to find all matches: No memory\n");
                     break;
                 }
-                match_list = tmp;
             }
-
-            match_list[match_count] = (char*)malloc(strlen(pmatch) + 3);
-            strcpy(match_list[match_count], pmatch); 
-            if (entry->d_type == DT_DIR) {
-                strcat(match_list[match_count], "/");
-            }
-            match_count++;
         }
     }
 

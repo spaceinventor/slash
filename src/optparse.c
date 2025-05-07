@@ -232,26 +232,31 @@ static int optparse_custom_func_trampoline(optparse_opt_t * opt, const char * ar
 }
 
 optparse_opt_t *optparse_add_custom(optparse_t * parser, int short_opt, const char * long_opt, const char * arg_desc, const char * help, optparse_custom_func_t func, void * data) {
-	optparse_opt_t * opt;
+	optparse_opt_t * opt = NULL;
 	struct custom_opt_ctx *custom_ctx = calloc(1, sizeof(*custom_ctx));
-	custom_ctx->func = func;
-	custom_ctx->org_data = data;
-	opt = malloc(sizeof(*opt));
-	memset(opt, 0, sizeof(*opt));
+	if (custom_ctx) {
+		custom_ctx->func = func;
+		custom_ctx->org_data = data;
+		opt = malloc(sizeof(*opt));
+		if(opt) {
+			memset(opt, 0, sizeof(*opt));
 
-	opt->parser = parser;
-	opt->short_opt = short_opt;
-	opt->long_opt = long_opt;
-	if (opt->long_opt)
-		opt->long_opt_len = strlen(opt->long_opt);
-	opt->arg_desc = arg_desc;
-	opt->help = help;
-	opt->func = optparse_custom_func_trampoline;
-	opt->data = custom_ctx;
-	opt->should_free_data = true;
-	*parser->last_option = opt;
-	parser->last_option = &opt->next;
-
+			opt->parser = parser;
+			opt->short_opt = short_opt;
+			opt->long_opt = long_opt;
+			if (opt->long_opt)
+				opt->long_opt_len = strlen(opt->long_opt);
+			opt->arg_desc = arg_desc;
+			opt->help = help;
+			opt->func = optparse_custom_func_trampoline;
+			opt->data = custom_ctx;
+			opt->should_free_data = true;
+			*parser->last_option = opt;
+			parser->last_option = &opt->next;
+		} else {
+			free(custom_ctx);
+		}
+	}
 	return opt;
 }
 
