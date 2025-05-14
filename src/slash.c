@@ -154,6 +154,21 @@ static int slash_restore_term(struct slash *slash)
 	return 0;
 }
 
+static int slash_wait_select(void *slashp, unsigned int ms);
+void slash_acquire_std_in_out(struct slash *slash) {	
+	slash_configure_term(slash);
+#ifdef SLASH_HAVE_SELECT
+	slash->waitfunc = slash_wait_select;
+#endif
+}
+
+void slash_release_std_in_out(struct slash *slash) {	
+	slash_restore_term(slash);
+#ifdef SLASH_HAVE_SELECT
+	slash->waitfunc = NULL;
+#endif
+}
+
 int slash_write(struct slash *slash, const char *buf, size_t count)
 {
 	return write(slash->fd_write, buf, count);

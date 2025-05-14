@@ -303,4 +303,19 @@ int slash_list_add(struct slash_command * item);
 int slash_list_remove(const struct slash_command * item);
 int slash_list_init();
 
+/**
+ * @brief let slash handle stdout/stdin
+ * @param slash pointer to valid slash instance
+ */
+void slash_acquire_std_in_out(struct slash *slash);
+
+/**
+ * @brief let slash release handling of stdout/stdin to default. Use this function if you have for instance an APM that needs stdin/stdout control
+ * @warning remember to call slash_acquire_std_in_out when you are done!
+ * @param slash pointer to valid slash instance
+ * @return 0 if success, -ENOTTY in case of failure
+ */
+void slash_release_std_in_out(struct slash *slash);
+
+
 #endif /* _SLASH_H_ */
