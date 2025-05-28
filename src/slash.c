@@ -1013,7 +1013,14 @@ char *slash_readline(struct slash *slash)
 
 
 
-
+static void slash_trim(char *line, size_t line_len) {
+	while(--line_len) {
+		if(!isspace(line[line_len])) {
+			break;
+		}
+		line[line_len] = '\0';
+	}
+}
 
 
 /* Core */
@@ -1031,8 +1038,10 @@ int slash_loop(struct slash *slash)
 			c = slash_getchar(slash);
 		} while (c != '\n' && c != '\r');
 	}
-
+	size_t line_len = 0;
 	while ((line = slash_readline(slash))) {
+		line_len = strlen(line);
+		slash_trim(line, line_len);
 		if (!slash_line_empty(line, strlen(line))) {
 			/* Run command */
 			ret = slash_execute(slash, line);
