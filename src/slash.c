@@ -1019,6 +1019,10 @@ char *slash_readline(struct slash *slash)
 
 
 static void slash_trim(char *line, size_t line_len) {
+	if (!line_len) {
+		return;
+	}
+
 	while(--line_len) {
 		if(!isspace(line[line_len])) {
 			break;
