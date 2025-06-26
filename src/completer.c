@@ -21,7 +21,6 @@ static void ls_appended(const char* tok, const char* app) {
     }
 
     sprintf(cmd, "ls -p %s%s", (tok != NULL ? tok : ""), (app != NULL ? app : ""));
-    
     int ret = system(cmd);
     (void)ret;
 }
@@ -274,8 +273,11 @@ void slash_complete(struct slash *slash)
  */
 void slash_path_completer(struct slash * slash, char * token) {
     // TODO: Add windows support
-    char cwd_buf[256];
-    char file_name_buf[256];
+    char *cwd_buf = calloc(sizeof(char), PATH_MAX);
+    if(!cwd_buf) {
+        return;
+    }
+    char file_name_buf[FILENAME_MAX];
     size_t match_list_size;
     uint16_t match_count;
     char ** match_list;
@@ -302,30 +304,41 @@ void slash_path_completer(struct slash * slash, char * token) {
     if (res != cwd_buf) {
         printf("Path error\n");
         slash_completer_revert_skip(slash, orig_slash_buffer);
+        free(cwd_buf);
         return;
     }
     
     // TODO: Add support for absolute paths
     /* handle home shortcut (~) and subdirectories in token */
-    int subdir_idx = last_char_occ(token, '/');
+    int subdir_idx;
     if (token[0] == '~') {
-        memset(cwd_buf, '\0', 256);
         strcpy(cwd_buf, getenv("HOME"));
-        strncpy(&cwd_buf[strlen(cwd_buf)], &token[1], subdir_idx);
-    } else if (subdir_idx != -1) {
-        strcat(cwd_buf, "/");
-        strncat(cwd_buf, token, subdir_idx);
+        strcat(cwd_buf, &token[1]);
+        subdir_idx = last_char_occ(cwd_buf, '/');
+        if (subdir_idx != -1) {
+            cwd_buf[subdir_idx] = '\0';
+        }
+    } else {
+        subdir_idx = last_char_occ(token, '/');
+        strcpy(cwd_buf, token);
+        if (subdir_idx != -1) {
+            cwd_buf[subdir_idx] = '\0';
+        }
     }
     cwd_ptr = opendir(cwd_buf);
 
     if (cwd_ptr == NULL) {
+        cwd_ptr = opendir(".");
+    }
+    if (cwd_ptr == NULL) {
         printf("No such file or directory:\n");
         ls_appended(NULL, NULL);
         slash_completer_revert_skip(slash, orig_slash_buffer);
+        free(cwd_buf);
         return;
     }
 
-    strcpy(file_name_buf, token+subdir_idx+1);
+    strcpy(file_name_buf, cwd_buf+subdir_idx+1);
     
     /* allocate memory dynamically as we don't know no. of matches */
     match_list_size = 16;
@@ -372,8 +385,10 @@ void slash_path_completer(struct slash * slash, char * token) {
             break;
 
         case 1:
-            strcpy(token+subdir_idx+1, match_list[0]);
-            slash->length = (token - slash->buffer) + strlen(token);
+            cwd_buf[subdir_idx] = '/';
+            strcpy(cwd_buf+subdir_idx+1, match_list[0]);
+            strcpy(token, cwd_buf);
+            slash->length = strlen(cwd_buf);
             slash->cursor = slash->length;
             break;
 
@@ -389,7 +404,7 @@ void slash_path_completer(struct slash * slash, char * token) {
             break;
         }
     }
-
+    free(cwd_buf);
     slash_completer_revert_skip(slash, orig_slash_buffer);
 
     closedir(cwd_ptr);
