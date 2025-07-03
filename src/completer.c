@@ -385,7 +385,9 @@ void slash_path_completer(struct slash * slash, char * token) {
             break;
 
         case 1:
-            cwd_buf[subdir_idx] = '/';
+            if(subdir_idx != -1) {
+                cwd_buf[subdir_idx] = '/';
+            }
             strcpy(cwd_buf+subdir_idx+1, match_list[0]);
             strcpy(token, cwd_buf);
             slash->length = strlen(cwd_buf);
