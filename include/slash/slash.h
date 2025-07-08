@@ -97,6 +97,7 @@
 /* Command prototype */
 struct slash;
 typedef int (*slash_func_t)(struct slash *slash);
+typedef int (*slash_func_context_t)(struct slash *slash, void *context);
 
 /* Wait function prototype,
  * this function is implemented by user, so use a void* instead of struct slash* */
@@ -120,7 +121,12 @@ typedef void (*slash_completer_func_t)(struct slash *slash, char * token);
 struct slash_command {
 	/* Static data */
 	char *name;
-	const slash_func_t func;
+	union {
+		/* Traditional function used by the `slash_command()` macros. */
+		const slash_func_t func;
+		/* Function with context pointer, for advanced API usage. */
+		const slash_func_context_t func_ctx;
+	};
 	const char *args;
 	const char *help;
 	const slash_completer_func_t completer;
@@ -129,6 +135,10 @@ struct slash_command {
 	/* single linked list:
 	 * The weird definition format comes from sys/queue.h SLINST_ENTRY() macro */
     struct { struct slash_command *sle_next; } next;
+	
+	/* Optional context pointer (after `next` for ABI compatibility).
+		Will be supplied to `func_ctx` if specified.  */
+	void *context;
 };
 
 /* Slash context */
