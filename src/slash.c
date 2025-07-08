@@ -459,9 +459,14 @@ int slash_execute(struct slash *slash, char *line)
 
 	slash->argc = argc;
 	slash->argv = argv;
-	ret = command->func(slash);
-
-
+	if (command->context) {
+		/* If the user has attached context to the command,
+			we assume they also specified a function which can accept it. */
+		ret = command->func_ctx(slash, command->context);
+	} else {
+		/* Otherwise call the traditional (`slash_command()` macro) function without context. */
+		ret = command->func(slash);
+	}
 
 	if (ret == SLASH_EUSAGE)
 		slash_command_usage(slash, command);
