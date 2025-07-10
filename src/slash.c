@@ -391,6 +391,11 @@ __attribute__((weak)) void slash_on_execute_hook(const char *line) {
 	(void)line;
 }
 
+__attribute__((weak)) void slash_on_execute_post_hook(const char *line, struct slash_command *command) {
+	(void)line;
+	(void)command;
+}
+
 /* A default no-prompt implementation is provided as a __attribute__((weak)) */
 __attribute__((weak)) int slash_prompt(struct slash *slash) {
 	(void)slash;
@@ -470,6 +475,8 @@ int slash_execute(struct slash *slash, char *line)
 
 	if (ret == SLASH_EUSAGE)
 		slash_command_usage(slash, command);
+
+	slash_on_execute_post_hook(line, command);
 
 	/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
 	free(processed_cmd_line);
