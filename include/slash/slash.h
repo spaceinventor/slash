@@ -223,6 +223,10 @@ void slash_sigint(struct slash *slash, int signum);
  */
 void slash_on_execute_hook(const char *line);
 
+/**
+ * @param line the slash line which was just executed
+ */
+void slash_on_execute_post_hook(const char *line, struct slash_command *command);
 
 /**
  * @brief Will be called before a file is executed by "run <file>", implement it to set environment variables for example.
