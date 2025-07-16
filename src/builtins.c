@@ -154,6 +154,7 @@ static int slash_builtin_watch(struct slash *slash)
 
 	}
 
+	optparse_del(parser);
 	return SLASH_SUCCESS;
 }
 slash_command_completer(watch, slash_builtin_watch, slash_watch_completer, "<command...>", "Repeat a command")
