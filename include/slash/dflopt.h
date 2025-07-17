@@ -19,5 +19,3 @@ extern unsigned int rdp_dfl_ack_timeout;
 extern unsigned int rdp_dfl_ack_count;
 
 void rdp_opt_add(optparse_t * parser);
-void rdp_opt_set();
-void rdp_opt_reset();
