@@ -246,10 +246,12 @@ void slash_complete(struct slash *slash)
          * if what the user typed in doesn't end with a space, we might
          * as well put all the common prefix in the buffer
          */
-        if(slash->buffer[slash->length-1] != ' ' && len_to_compare_to < prefix_len) {
-            strncpy(slash->buffer, completion->cmd->name, prefix_len);
-            slash->buffer[prefix_len] = '\0';
-            slash->cursor = slash->length = strlen(slash->buffer);
+        if(slash->length > 0) {
+            if(slash->buffer[slash->length-1] != ' ' && len_to_compare_to < prefix_len) {
+                strncpy(slash->buffer, completion->cmd->name, prefix_len);
+                slash->buffer[prefix_len] = '\0';
+                slash->cursor = slash->length = strlen(slash->buffer);
+            }
         }
     } else {
         if (slash_global_completer) {
