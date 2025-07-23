@@ -642,8 +642,13 @@ void slash_history_add(struct slash *slash, char *line)
 		return;
 
 	/* Push including trailing zero */
-	if (!slash_line_empty(line, strlen(line)))
+	if (!slash_line_empty(line, strlen(line))) {
+		if(slash->history_file) {
+			fprintf(slash->history_file, "%s\n", line);
+			fflush(slash->history_file);
+		}
 		slash_history_push(slash, line, strlen(line) + 1);
+	}
 }
 
 static void slash_history_next(struct slash *slash)
@@ -1165,4 +1170,23 @@ void slash_destroy(struct slash *slash)
 	}
 
 	free(slash);
+}
+
+void slash_init_history_from_file(struct slash *slash, const char *history_filename) {
+	/* Set this to NULL to disable history, will be set if all goes well */
+	slash->history_file = NULL;
+	FILE *history = fopen(history_filename, "a+");
+	if (history) {
+		ssize_t read;
+		char  *line;
+		size_t len = 0;
+		while ((read = getline(&line, &len, history)) != -1) {
+			if(line[read - 1] == '\n') {
+				line[read - 1] = '\0';
+			}
+			slash_history_add(slash, line);
+		}
+		free(line);
+		slash->history_file = history;
+	}
 }
