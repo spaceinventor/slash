@@ -114,10 +114,9 @@ static int slash_rawmode_enable(struct slash *slash)
 #ifdef SLASH_HAVE_TERMIOS_H
 	struct termios raw;
 
-	if (tcgetattr(slash->fd_read, &slash->original) < 0)
+	if (tcgetattr(slash->fd_read, &raw) < 0)
 		return -ENOTTY;
 
-	raw = slash->original;
 	raw.c_cflag |= (CS8);
 	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN);
 	raw.c_cc[VMIN] = 1;
