@@ -144,6 +144,26 @@ struct completion_entry {
 
 slash_completer_func_t slash_global_completer = NULL;
 
+static void call_cmd_completion(struct slash *slash, struct slash_command * cmd) {
+    size_t cmd_len = strlen(cmd->name);
+    if(slash->length == cmd_len) {
+        slash->buffer[slash->length] = ' ';
+        slash->buffer[slash->length+1] = '\0';
+        slash->cursor++;
+        slash->length++;
+    }
+    char *argv[SLASH_ARG_MAX];
+    slash->argv = argv;
+    char args[slash->line_size];
+    /* Skip the found command name when building the command line */
+    strcpy(args, slash->buffer + cmd_len + 1);
+    slash_build_args(args, slash->argv, &slash->argc);
+    cmd->completer(slash, slash->buffer + cmd_len + 1);
+    if (slash_global_completer) {
+        slash_global_completer(slash, slash->buffer + cmd_len + 1);
+    }
+}
+
 /**
  * @brief For tab auto completion, calls other completion functions when matched command has them
  *
@@ -179,12 +199,18 @@ void slash_complete(struct slash *slash)
         cmd_match = strncmp(slash->buffer, cmd->name, slash_min(len_to_compare_to, cmd_len));
         /* Do we have an exact match on the buffer ?*/
         if (cmd_match == 0) {
-            if((cmd_len < len_to_compare_to && cmd->completer) || (len_to_compare_to <= cmd_len)) {
+            if(len_to_compare_to <= cmd_len) {
                 completion = malloc(sizeof(struct completion_entry));
                 if (completion) {
                     matches++;
                     completion->cmd = cmd;
                     SLIST_INSERT_HEAD(&completions, completion, list);
+                }
+            } else if (cmd_len < len_to_compare_to && cmd->completer) {
+                /* Call the matching command completer with the rest of the buffer but only if the current 
+                completer allows it */
+                if(slash->complete_in_completion == true) {
+                    call_cmd_completion(slash, cmd);
                 }
             }
         }
@@ -223,22 +249,7 @@ void slash_complete(struct slash *slash)
             /* Call the matching command completer with the rest of the buffer but only if the current 
                completer allows it */
             if(slash->complete_in_completion == true) {
-                if(slash->length == cmd_len) {
-                    slash->buffer[slash->length] = ' ';
-                    slash->buffer[slash->length+1] = '\0';
-                    slash->cursor++;
-                    slash->length++;
-                }
-                char *argv[SLASH_ARG_MAX];
-                slash->argv = argv;
-                char args[slash->line_size];
-                /* Skip the found command name when building the command line */
-                strcpy(args, slash->buffer + cmd_len + 1);
-                slash_build_args(args, slash->argv, &slash->argc);
-                completion->cmd->completer(slash, slash->buffer + cmd_len + 1);
-                if (slash_global_completer) {
-                    slash_global_completer(slash, slash->buffer + cmd_len + 1);
-                }
+                call_cmd_completion(slash, completion->cmd);
             }
         }
     } else if(matches > 1) {
@@ -247,9 +258,9 @@ void slash_complete(struct slash *slash)
          * as well put all the common prefix in the buffer
          */
         if(slash->length > 0) {
-            if(slash->buffer[slash->length-1] != ' ' && len_to_compare_to < prefix_len) {
-                strncpy(slash->buffer, completion->cmd->name, prefix_len);
-                slash->buffer[prefix_len] = '\0';
+            if(slash->buffer[slash->length-1] != ' ' && len_to_compare_to < cur_prefix) {
+                strncpy(slash->buffer, completion->cmd->name, cur_prefix);
+                slash->buffer[cur_prefix] = '\0';
                 slash->cursor = slash->length = strlen(slash->buffer);
             }
         }
