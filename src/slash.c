@@ -870,12 +870,21 @@ char *slash_readline(struct slash *slash)
 	char *ret = slash->buffer;
 	int c, esc[3];
 	bool done = false, escaped = false;
+	bool quote[2] = { false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	int mightbeminus = 0;
 
 	/* Reset buffer */
 	slash_reset(slash);
 	slash_refresh(slash, 0);
 
 	while (!done && ((c = slash_getchar(slash)) >= 0)) {
+		if (!quote[0] && c == '\"') {
+			quote[1] = !quote[1];
+		}
+		if (!quote[1] && c == '\'') {
+			quote[0] = !quote[0];
+		}
+
 		if (escaped) {
 			esc[0] = c;
 			esc[1] = slash_getchar(slash);
@@ -999,9 +1008,43 @@ char *slash_readline(struct slash *slash)
 				/* Unknown control */
 				break;
 			}
-		} else if (isprint(c)) {
-			/* Add to buffer */
-			slash_insert(slash, c);
+		} else {
+			/* Check for non-ASCII characters outside quotes */
+			if ((c&0x80) != 0 && !quote[0] && !quote[1]) {
+
+				/* Convert unicode minus from Ubuntu calculator to ASCII dash */
+				if (mightbeminus == 0 && c == 0xE2) { 
+					mightbeminus = 1;
+					continue;
+				} else if (mightbeminus == 1 && c == 0x88) { 
+					mightbeminus = 2;
+					continue;
+				} else if (mightbeminus == 2 && c == 0x92) {
+					/* Yep, it's a minus sign */
+					slash_insert(slash, '-');
+					mightbeminus = 0;
+					continue;
+				} else {
+					mightbeminus = 0;
+				}
+
+				printf(" Got non-ascii character 0x%02x outside of quotes, ignoring line\n", c&0xFF);
+
+				/* Discard the rest of the line */
+				do { c = slash_getchar(slash); } 
+				while (c != '\n' && c != '\r' && c >= 0);
+
+				slash_reset(slash);
+				done = true;
+				break;
+			}
+			mightbeminus = 0;
+
+			/* If inside a quote, unrecognised characters are ignored */
+			if (isprint(c)) {
+				/* Add to buffer */
+				slash_insert(slash, c);
+			}
 		}
 
 		slash->last_char = c;
