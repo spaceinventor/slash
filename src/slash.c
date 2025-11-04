@@ -403,8 +403,51 @@ __attribute__((weak)) int slash_prompt(struct slash *slash) {
 
 slash_process_cmd_line_hook_t slash_process_cmd_line_hook  = NULL;
 
+static const int minus_unicode_bytes[] = { 0xE2, 0x88, 0x92 };
+
+static bool has_bad_unicode (struct slash *slash, unsigned char *c, bool in_quotes, int *mightbeminus) {
+	/* Check for non-ASCII characters outside quotes */
+	if ((*c & 0x80) != 0 && !in_quotes) {
+		if (*c == minus_unicode_bytes[*mightbeminus]) {
+			*mightbeminus = *mightbeminus + 1;
+			if (*mightbeminus == sizeof(minus_unicode_bytes)/sizeof(minus_unicode_bytes[0])) {
+				/* Yep, it's a minus sign */
+				*c = '-';
+				memmove(c-2, c, strlen(c)+1);
+				*mightbeminus = 0;
+			}
+			return false;
+		} else {
+			*mightbeminus = 0;
+			printf(" Got non-ascii character 0x%02x outside of quotes, ignoring line\n", *c&0xFF);
+			return true;
+		}
+	} else {
+		*mightbeminus = 0;
+	}
+	return false;
+}
+
+static bool has_unicode(struct slash *slash, char *line) {
+	bool result = false;
+	bool quote[2] = { false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	int mightbeminus = 0;
+	for (unsigned char *c = (unsigned char *)line; *c != '\0'; c++) {
+		if (*c == '\"' && !quote[0]) quote[1] = !quote[1];
+		else if (*c == '\'' && !quote[1]) quote[0] = !quote[0];
+		if(has_bad_unicode(slash, c, quote[0] || quote[1], &mightbeminus)) {
+			result = true;
+			break;
+		}
+	}
+	return result;
+}
+
 int slash_execute(struct slash *slash, char *line)
 {
+	if (has_unicode(slash, line)) {
+		return EINVAL;
+	}
 	struct slash_command *command;
 	char *args, *argv[SLASH_ARG_MAX];
 	char *processed_cmd_line = NULL, *line_to_use;
@@ -878,12 +921,8 @@ char *slash_readline(struct slash *slash)
 	slash_refresh(slash, 0);
 
 	while (!done && ((c = slash_getchar(slash)) >= 0)) {
-		if (!quote[0] && c == '\"') {
-			quote[1] = !quote[1];
-		}
-		if (!quote[1] && c == '\'') {
-			quote[0] = !quote[0];
-		}
+		if (c == '\"' && !quote[0]) quote[1] = !quote[1];
+		else if (c == '\'' && !quote[1]) quote[0] = !quote[0];
 
 		if (escaped) {
 			esc[0] = c;
@@ -1010,33 +1049,26 @@ char *slash_readline(struct slash *slash)
 			}
 		} else {
 			/* Check for non-ASCII characters outside quotes */
-			if ((c&0x80) != 0 && !quote[0] && !quote[1]) {
-
-				/* Convert unicode minus from Ubuntu calculator to ASCII dash */
-				if (mightbeminus == 0 && c == 0xE2) { 
-					mightbeminus = 1;
-					continue;
-				} else if (mightbeminus == 1 && c == 0x88) { 
-					mightbeminus = 2;
-					continue;
-				} else if (mightbeminus == 2 && c == 0x92) {
-					/* Yep, it's a minus sign */
-					slash_insert(slash, '-');
-					mightbeminus = 0;
+			if ((c & 0x80) != 0 && !quote[0] && !quote[1]) {
+				if (c == minus_unicode_bytes[mightbeminus]) {
+					mightbeminus++;
+					if (mightbeminus == sizeof(minus_unicode_bytes)/sizeof(minus_unicode_bytes[0])) {
+						slash_insert(slash, '-');
+						slash_refresh(slash, 0);
+						mightbeminus = 0;
+					}
 					continue;
 				} else {
-					mightbeminus = 0;
+					printf(" Got non-ascii character 0x%02x outside of quotes, ignoring line\n", c&0xFF);
+
+					/* Discard the rest of the line */
+					do { c = slash_getchar(slash); } 
+					while (c != '\n' && c != '\r' && c >= 0);
+
+					slash_reset(slash);
+					done = true;
+					break;
 				}
-
-				printf(" Got non-ascii character 0x%02x outside of quotes, ignoring line\n", c&0xFF);
-
-				/* Discard the rest of the line */
-				do { c = slash_getchar(slash); } 
-				while (c != '\n' && c != '\r' && c >= 0);
-
-				slash_reset(slash);
-				done = true;
-				break;
 			}
 			mightbeminus = 0;
 
