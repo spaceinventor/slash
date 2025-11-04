@@ -428,19 +428,34 @@ static bool has_bad_unicode (struct slash *slash, unsigned char *c, bool in_quot
 	return false;
 }
 
+static bool in_quote(unsigned char c, bool quote[3]) {
+	if (c == '\"' && !quote[0]) quote[1] = !quote[1];
+	else if (c == '\'' && !quote[1]) quote[0] = !quote[0];
+	else if (c == '#' && !quote[0] && !quote[1]) quote[2] = true;
+	return quote[0] || quote[1] || quote[2];
+}
+
 static bool has_unicode(struct slash *slash, char *line) {
 	bool result = false;
-	bool quote[2] = { false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	bool quote[3] = { false, false, false }; /* Index 0 represent double quote, index 1 represent single quote */
 	int mightbeminus = 0;
 	for (unsigned char *c = (unsigned char *)line; *c != '\0'; c++) {
-		if (*c == '\"' && !quote[0]) quote[1] = !quote[1];
-		else if (*c == '\'' && !quote[1]) quote[0] = !quote[0];
-		if(has_bad_unicode(slash, c, quote[0] || quote[1], &mightbeminus)) {
+		if(has_bad_unicode(slash, c, in_quote(*c, quote), &mightbeminus)) {
 			result = true;
 			break;
 		}
 	}
 	return result;
+}
+
+static void strip_comment(char *line) {
+	bool quote[3] = { false, false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	for (int i = 1; line[i] != '\0'; i++) {
+		if(!in_quote(line[i-1], quote) && line[i] == '#') {
+			line[i] = '\0';
+			return;
+		}
+	}
 }
 
 int slash_execute(struct slash *slash, char *line)
@@ -460,6 +475,8 @@ int slash_execute(struct slash *slash, char *line)
 	if (line[0] == '#') {
 		return SLASH_SUCCESS;
 	}
+
+	strip_comment(line);
 
 	if(NULL != slash_process_cmd_line_hook) {
 		processed_cmd_line = slash_process_cmd_line_hook(line);
@@ -913,7 +930,7 @@ char *slash_readline(struct slash *slash)
 	char *ret = slash->buffer;
 	int c, esc[3];
 	bool done = false, escaped = false;
-	bool quote[2] = { false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	bool quote[3] = { false, false, false }; /* Index 0 represent double quote, index 1 represent single quote */
 	int mightbeminus = 0;
 
 	/* Reset buffer */
@@ -921,9 +938,6 @@ char *slash_readline(struct slash *slash)
 	slash_refresh(slash, 0);
 
 	while (!done && ((c = slash_getchar(slash)) >= 0)) {
-		if (c == '\"' && !quote[0]) quote[1] = !quote[1];
-		else if (c == '\'' && !quote[1]) quote[0] = !quote[0];
-
 		if (escaped) {
 			esc[0] = c;
 			esc[1] = slash_getchar(slash);
@@ -1049,26 +1063,25 @@ char *slash_readline(struct slash *slash)
 			}
 		} else {
 			/* Check for non-ASCII characters outside quotes */
-			if ((c & 0x80) != 0 && !quote[0] && !quote[1]) {
-				if (c == minus_unicode_bytes[mightbeminus]) {
-					mightbeminus++;
-					if (mightbeminus == sizeof(minus_unicode_bytes)/sizeof(minus_unicode_bytes[0])) {
-						slash_insert(slash, '-');
-						slash_refresh(slash, 0);
-						mightbeminus = 0;
-					}
-					continue;
-				} else {
-					printf(" Got non-ascii character 0x%02x outside of quotes, ignoring line\n", c&0xFF);
-
-					/* Discard the rest of the line */
-					do { c = slash_getchar(slash); } 
-					while (c != '\n' && c != '\r' && c >= 0);
-
-					slash_reset(slash);
-					done = true;
-					break;
+			if (c == minus_unicode_bytes[mightbeminus]) {
+				mightbeminus++;
+				if (mightbeminus == sizeof(minus_unicode_bytes)/sizeof(minus_unicode_bytes[0])) {
+					slash_insert(slash, '-');
+					slash_refresh(slash, 0);
+					mightbeminus = 0;
 				}
+				continue;
+			}
+			if (!in_quote((unsigned char)c, quote) && (c & 0x80) != 0) {
+				printf(" Got non-ascii character 0x%02x outside of quotes, ignoring line\n", c&0xFF);
+
+				/* Discard the rest of the line */
+				do { c = slash_getchar(slash); } 
+				while (c != '\n' && c != '\r' && c >= 0);
+
+				slash_reset(slash);
+				done = true;
+				break;
 			}
 			mightbeminus = 0;
 
