@@ -437,7 +437,7 @@ static bool in_quote(unsigned char c, bool quote[3]) {
 
 static bool has_unicode(struct slash *slash, char *line) {
 	bool result = false;
-	bool quote[3] = { false, false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	bool quote[3] = { false, false, false }; /* Index 0 represents double quote, index 1 represents single quote, index 2 represents a comment */
 	int mightbeminus = 0;
 	for (unsigned char *c = (unsigned char *)line; *c != '\0'; c++) {
 		if(has_bad_unicode(slash, c, in_quote(*c, quote), &mightbeminus)) {
@@ -449,7 +449,7 @@ static bool has_unicode(struct slash *slash, char *line) {
 }
 
 static void strip_comment(char *line) {
-	bool quote[3] = { false, false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	bool quote[3] = { false, false, false }; /* Index 0 represents double quote, index 1 represents single quote, index 2 represents a comment */
 	for (int i = 1; line[i] != '\0'; i++) {
 		if(!in_quote(line[i-1], quote) && line[i] == '#') {
 			line[i] = '\0';
@@ -458,8 +458,9 @@ static void strip_comment(char *line) {
 	}
 }
 
-int slash_execute(struct slash *slash, char *line)
+int slash_execute(struct slash *slash, char *org_line)
 {
+	char *line = org_line;
 	if (has_unicode(slash, line)) {
 		return EINVAL;
 	}
@@ -475,7 +476,9 @@ int slash_execute(struct slash *slash, char *line)
 	if (line[0] == '#') {
 		return SLASH_SUCCESS;
 	}
-
+	/* Skip heading white spaces */
+	while (*line && isspace((unsigned int) *line))
+		line++;
 	strip_comment(line);
 
 	if(NULL != slash_process_cmd_line_hook) {
@@ -930,7 +933,7 @@ char *slash_readline(struct slash *slash)
 	char *ret = slash->buffer;
 	int c, esc[3];
 	bool done = false, escaped = false;
-	bool quote[3] = { false, false, false }; /* Index 0 represent double quote, index 1 represent single quote */
+	bool quote[3] = { false, false, false }; /* Index 0 represents double quote, index 1 represents single quote, index 2 represents a comment */
 	int mightbeminus = 0;
 
 	/* Reset buffer */
