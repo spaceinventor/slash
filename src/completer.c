@@ -300,7 +300,21 @@ void slash_path_completer(struct slash * slash, char * token) {
 
     /* skip flags in cmd */
     char * orig_slash_buffer = slash->buffer;
-    slash_completer_skip_flagged_prefix(slash, NULL);
+
+    char *token_to_complete = NULL;
+    if (slash->cursor == slash->length) {
+        token_to_complete = slash->buffer + slash->length;
+        while(token_to_complete > slash->buffer && *(token_to_complete-1) != ' ') {
+            token_to_complete--;
+        }
+    } else {
+        size_t token_len = strlen(token);
+        size_t cursor_offset = slash->length - slash->cursor;
+        if (cursor_offset < token_len) {
+            token[token_len - cursor_offset] = '\0';
+        }
+        token_to_complete = token;
+    }
 
     /* lazy fix */
     /* TODO?: Not really sure what the line below is supposed to fix,
@@ -319,16 +333,16 @@ void slash_path_completer(struct slash * slash, char * token) {
     // TODO: Add support for absolute paths
     /* handle home shortcut (~) and subdirectories in token */
     int subdir_idx;
-    if (token[0] == '~') {
+    if (token_to_complete[0] == '~') {
         strcpy(cwd_buf, getenv("HOME"));
-        strcat(cwd_buf, &token[1]);
+        strcat(cwd_buf, &token_to_complete[1]);
         subdir_idx = last_char_occ(cwd_buf, '/');
         if (subdir_idx != -1) {
             cwd_buf[subdir_idx] = '\0';
         }
     } else {
-        subdir_idx = last_char_occ(token, '/');
-        strcpy(cwd_buf, token);
+        subdir_idx = last_char_occ(token_to_complete, '/');
+        strcpy(cwd_buf, token_to_complete);
         if (subdir_idx != -1) {
             cwd_buf[subdir_idx] = '\0';
         }
@@ -388,6 +402,7 @@ void slash_path_completer(struct slash * slash, char * token) {
     switch (match_count)
     {
         case 0:
+            printf("\n");
             ls_appended((subdir_idx > -1) ? cwd_buf : NULL, NULL);
             slash_bell(slash);
             break;
@@ -397,7 +412,7 @@ void slash_path_completer(struct slash * slash, char * token) {
                 cwd_buf[subdir_idx] = '/';
             }
             strcpy(cwd_buf+subdir_idx+1, match_list[0]);
-            strcpy(token, cwd_buf);
+            strcpy(token_to_complete, cwd_buf);
             slash->length = strlen(cwd_buf);
             slash->cursor = slash->length;
             break;
@@ -405,12 +420,12 @@ void slash_path_completer(struct slash * slash, char * token) {
         default: {
             int prefix_idx = common_prefix_idx(match_list, match_count);
 
-            strncpy(token+subdir_idx+1, match_list[0], prefix_idx);
-            token[subdir_idx+prefix_idx+1] = 0;
-            slash->length = (token - slash->buffer) + strlen(token);
+            strncpy(token_to_complete+subdir_idx+1, match_list[0], prefix_idx);
+            token_to_complete[subdir_idx+prefix_idx+1] = 0;
+            slash->length = (token_to_complete - slash->buffer) + strlen(token_to_complete);
             slash->cursor = slash->length;
             printf("\n");
-            ls_appended(token, "* -d");
+            ls_appended(token_to_complete, "* -d");
             break;
         }
     }
