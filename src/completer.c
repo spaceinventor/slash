@@ -295,6 +295,7 @@ void slash_path_completer(struct slash * slash, char * token) {
     if (token[0]=='\0') {
         printf("\n");
         ls_appended(NULL, NULL);
+        free(cwd_buf);
         return;
     }
 
