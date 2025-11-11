@@ -413,7 +413,7 @@ static bool has_bad_unicode (struct slash *slash, unsigned char *c, bool in_quot
 			if (*mightbeminus == sizeof(minus_unicode_bytes)/sizeof(minus_unicode_bytes[0])) {
 				/* Yep, it's a minus sign */
 				*c = '-';
-				memmove(c-2, c, strlen(c)+1);
+				memmove(c-2, c, strlen((char*)c)+1);
 				*mightbeminus = 0;
 			}
 			return false;
