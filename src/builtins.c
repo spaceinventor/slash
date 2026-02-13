@@ -23,8 +23,8 @@ static int slash_builtin_help(struct slash *slash)
 	/* If no arguments given, just list all top-level commands */
 	if (slash->argc < 2) {
 		struct slash_command * cmd;
-		slash_list_iterator i = {0};
-		while ((cmd = slash_list_iterate(&i)) != NULL) {
+		slash_list_iterator iter = {0};
+		while ((cmd = slash_list_iterate(&iter)) != NULL) {
 			slash_command_description(slash, cmd);
 		}
 		return SLASH_SUCCESS;
