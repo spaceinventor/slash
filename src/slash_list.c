@@ -14,7 +14,7 @@ static struct slash_command command_size_set[2] __attribute__((aligned(1)));
 #define SLASH_STORAGE_SIZE ((intptr_t) &command_size_set[1] - (intptr_t) &command_size_set[0])
 #endif
 
-static SLIST_HEAD(slash_list_head_s, slash_command) slash_list_head = {};
+static SLIST_HEAD(slash_list_head_s, slash_command) slash_list_head = {0};
 
 struct slash_command * slash_list_iterate(slash_list_iterator * iterator) {
 
@@ -32,7 +32,7 @@ struct slash_command * slash_list_find_name(const char * name) {
 
 	struct slash_command * found = NULL;
 	struct slash_command * cmd;
-	slash_list_iterator i = {};
+	slash_list_iterator i = {0};
 	while ((cmd = slash_list_iterate(&i)) != NULL) {
 
 		if (strcmp(cmd->name, name) == 0) {
@@ -79,7 +79,7 @@ int slash_list_init() {
 	__attribute__((weak)) extern struct slash_command __start_slash;
 	__attribute__((weak)) extern struct slash_command __stop_slash;
 
-	slash_list_iterator iterator = {};
+	slash_list_iterator iterator = {0};
 	iterator.element = &__start_slash;
 
 	while (iterator.element != &__stop_slash) {

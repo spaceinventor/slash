@@ -8,10 +8,14 @@
 
 /* Implement this function to set environment variables for example */
 __attribute__((weak)) void slash_on_run_pre_hook(const char * const filename, void ** ctx_for_post) {  /* Set up environemnt variables for "run" command. */
+    (void)filename;
+    (void)ctx_for_post;
 }
 
 /* Implement this function to clear environment variables for example */
 __attribute__((weak)) void slash_on_run_post_hook(const char * const filename, void * ctx) {
+    (void)filename;
+    (void)ctx;
 }
 
 int slash_run(struct slash *slash, char * filename, int printcmd) {
@@ -107,6 +111,6 @@ static int cmd_run(struct slash *slash) {
 slash_command_completer(run, cmd_run, slash_path_completer, "<file>", "Runs commands in the specified file. \n"\
     "Sets the following environment variables during execution:\n\n"\
     "- __FILE__ to the path and name of the executed file\n"\
-    "- __FILE_DIR__ to the directory containing the executed file, useful for running other files located relative to __FILE__");
+    "- __FILE_DIR__ to the directory containing the executed file, useful for running other files located relative to __FILE__")
 /* TODO: Documenting __FILE__ and __FILE_DIR__ is incorrect.
     They are implemented in hooks, but right now we don't have a way to document them there. */

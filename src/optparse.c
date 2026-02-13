@@ -314,6 +314,8 @@ void optparse_help(optparse_t * parser, FILE * fp) {
 
 static int
 optparse_handle_help(optparse_opt_t * opt, const char * arg) {
+	(void)arg;
+	
 	optparse_help(opt->parser, stdout);
 	return 0;
 }
@@ -327,6 +329,8 @@ optparse_add_help(optparse_t * parser) {
 
 static int
 optparse_handle_set(optparse_opt_t * opt, const char * arg) {
+	(void)arg;
+
 	int * ptr = opt->data;
 
 	*ptr = opt->spec.set_value;

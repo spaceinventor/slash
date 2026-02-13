@@ -41,15 +41,8 @@
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
 	(type *)( (void *)__mptr - offsetof(type,member) );})
 
-#define slash_max(a,b) \
-	({ __typeof__ (a) _a = (a); \
-	__typeof__ (b) _b = (b); \
-	_a > _b ? _a : _b; })
-
-#define slash_min(a,b) \
-	({ __typeof__ (a) _a = (a); \
-	__typeof__ (b) _b = (b); \
-	_a < _b ? _a : _b; })
+#define slash_max(a, b) ((a) > (b) ? (a) : (b))
+#define slash_min(a, b) ((a) < (b) ? (a) : (b))
 
 #define __slash_command(_ident, _name, _func, _completer, _args, _help) 	\
 	__attribute__((section("slash")))\

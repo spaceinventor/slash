@@ -43,7 +43,7 @@ static int common_prefix_idx(char ** strings, size_t str_count) {
 
     // outer loop: iterate each char, inner loop: iterate each string in list
     for (int i = 0; strings[0][i] != '\0'; ++i) {
-        for (int j = 0; j < str_count; ++j) {
+        for (int j = 0; j < (int) str_count; ++j) {
             if (strings[j][i] != strings[0][i]) {
                 prefix_idx = i;
                 return prefix_idx;
@@ -177,13 +177,13 @@ void slash_complete(struct slash *slash)
     struct completion_entry *completion = NULL;
     struct completion_entry *cur_completion;
     SLIST_INIT( &completions );
-	slash_list_iterator i = {};
+	slash_list_iterator i = {0};
     size_t cmd_len;
-    int cur_prefix;
+    size_t cur_prefix;
     int cmd_match;
     {
         /* Let's take care of multiple consecutive trailing spaces */
-        int nof_trailing_spaces = 0;
+        size_t nof_trailing_spaces = 0;
         while (nof_trailing_spaces < slash->length && slash->buffer[slash->length - 1 - nof_trailing_spaces] == ' ') {
             nof_trailing_spaces++;
         }
@@ -193,7 +193,7 @@ void slash_complete(struct slash *slash)
             slash->buffer[slash->length] = '\0';
         }
     }
-    int len_to_compare_to = slash->length>0?slash->buffer[slash->length-1] == ' '?slash->length-1:slash->length:0;
+    size_t len_to_compare_to = slash->length>0?slash->buffer[slash->length-1] == ' '?slash->length-1:slash->length:0;
     while ((cmd = slash_list_iterate(&i)) != NULL) {
         cmd_len = strlen(cmd->name);
         cmd_match = strncmp(slash->buffer, cmd->name, slash_min(len_to_compare_to, cmd_len));
@@ -214,12 +214,12 @@ void slash_complete(struct slash *slash)
         slash_printf(slash, "\n");
     }
     struct completion_entry *prev_completion = NULL;
-    int prefix_len = INT_MAX;
+    size_t prefix_len = INT_MAX;
 
     SLIST_FOREACH(cur_completion, &completions, list) {
         /* Compute the length of prefix common to all completions */
         if (prev_completion != 0) {
-            cur_prefix = slash_prefix_length(prev_completion->cmd->name, cur_completion->cmd->name);
+            cur_prefix = (size_t) slash_prefix_length(prev_completion->cmd->name, cur_completion->cmd->name);
             if(cur_prefix < prefix_len) {
                 prefix_len = cur_prefix;
                 completion = cur_completion;
@@ -281,13 +281,13 @@ void slash_complete(struct slash *slash)
  */
 void slash_path_completer(struct slash * slash, char * token) {
     // TODO: Add windows support
-    char *cwd_buf = calloc(sizeof(char), PATH_MAX);
+    char *cwd_buf = calloc(PATH_MAX, sizeof(char));
     if(!cwd_buf) {
         return;
     }
     char file_name_buf[FILENAME_MAX];
     size_t match_list_size;
-    uint16_t match_count;
+    size_t match_count;
     char ** match_list;
     DIR * cwd_ptr;
     struct dirent * entry;
@@ -434,7 +434,7 @@ void slash_path_completer(struct slash * slash, char * token) {
     closedir(cwd_ptr);
 
     /* free all memory allocated for string matches */
-    for (int i = 0; i < match_count; i++)
+    for (unsigned int i = 0; i < match_count; i++)
     {
         free(match_list[i]);
     }
@@ -442,6 +442,8 @@ void slash_path_completer(struct slash * slash, char * token) {
 }
 
 static void slash_complete_other_commands(struct slash *slash, char * token, char * prefix) {
+    (void)token;
+    
     // skip prefix
 	char * orig_slash_buffer = slash->buffer;
 	slash_completer_skip_flagged_prefix(slash, prefix);

@@ -23,7 +23,7 @@ static int slash_builtin_help(struct slash *slash)
 	/* If no arguments given, just list all top-level commands */
 	if (slash->argc < 2) {
 		struct slash_command * cmd;
-		slash_list_iterator i = {};
+		slash_list_iterator i = {0};
 		while ((cmd = slash_list_iterate(&i)) != NULL) {
 			slash_command_description(slash, cmd);
 		}
@@ -48,8 +48,7 @@ static int slash_builtin_help(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command_completer(help, slash_builtin_help, slash_help_completer, "[command]",
-	      "Show available commands");
+slash_command_completer(help, slash_builtin_help, slash_help_completer, "[command]", "Show available commands")
 
 static int slash_builtin_history(struct slash *slash)
 {
@@ -62,8 +61,7 @@ static int slash_builtin_history(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command(history, slash_builtin_history, NULL,
-	      "Show previous commands");
+slash_command(history, slash_builtin_history, NULL, "Show previous commands")
 
 static int slash_builtin_echo(struct slash *slash)
 {
@@ -76,8 +74,7 @@ static int slash_builtin_echo(struct slash *slash)
 
 	return SLASH_SUCCESS;
 }
-slash_command(echo, slash_builtin_echo, "[string]",
-	      "Display a line of text");
+slash_command(echo, slash_builtin_echo, "[string]", "Display a line of text")
 
 #ifndef SLASH_NO_EXIT
 static int slash_builtin_exit(struct slash *slash)
@@ -85,8 +82,7 @@ static int slash_builtin_exit(struct slash *slash)
 	(void)slash;
 	return SLASH_EXIT;
 }
-slash_command(exit, slash_builtin_exit, NULL,
-	      "Exit application");
+slash_command(exit, slash_builtin_exit, NULL, "Exit application")
 #endif
 
 void slash_require_activation(struct slash *slash, bool activate)
@@ -108,7 +104,7 @@ static int slash_builtin_confirm(struct slash *slash) {
 		return SLASH_EBREAK;
 	}
 }
-slash_command(confirm, slash_builtin_confirm, "", "Block until user confirmation");
+slash_command(confirm, slash_builtin_confirm, "", "Block until user confirmation")
 
 static int slash_builtin_watch(struct slash *slash)
 {

@@ -276,7 +276,7 @@ slash_command_find(struct slash *slash, char *line, size_t linelen, char **args)
 	struct slash_command *max_match_cmd = NULL;
 
 	struct slash_command * cmd;
-	slash_list_iterator i = {};
+	slash_list_iterator i = {0};
 	size_t cmd_length;
 	while ((cmd = slash_list_iterate(&i)) != NULL) {
 		cmd_length = strlen(cmd->name);
@@ -406,6 +406,8 @@ slash_process_cmd_line_hook_t slash_process_cmd_line_hook  = NULL;
 static const int minus_unicode_bytes[] = { 0xE2, 0x88, 0x92 };
 
 static bool has_bad_unicode (struct slash *slash, unsigned char *c, bool in_quotes, int *mightbeminus) {
+	(void)slash;
+	
 	/* Check for non-ASCII characters outside quotes */
 	if ((*c & 0x80) != 0 && !in_quotes) {
 		if (*c == minus_unicode_bytes[*mightbeminus]) {
