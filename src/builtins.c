@@ -111,11 +111,13 @@ static int slash_builtin_watch(struct slash *slash)
 
 	unsigned int interval = 1000;
 	unsigned int count = 0;
+	int exit = 0xFFFFFF;
 
     optparse_t * parser = optparse_new("watch", "<command...>");
     optparse_add_help(parser);
 	optparse_add_unsigned(parser, 'n', "interval", "NUM", 0, &interval, "interval in milliseconds (default = <env timeout>)");
 	optparse_add_unsigned(parser, 'c', "count", "NUM", 0, &count, "number of times to repeat (default = infinite)");
+	optparse_add_unsigned(parser, 'e', "exit", "NUM", 0, &exit, "stop watch when command returns the given exit code (default = ignore exit code completely)");
 
     int argi = optparse_parse(parser, slash->argc - 1, (const char **) slash->argv + 1);
     if (argi < 0) {
@@ -133,7 +135,7 @@ static int slash_builtin_watch(struct slash *slash)
 	}
 
 	printf("Executing \"%s\" each %u ms - press <enter> to stop\n", line, interval);
-
+	int cmd_exit_code;
 	while(1) {
 
 		/* Make another copy, since slash_exec will modify this */
@@ -145,7 +147,12 @@ static int slash_builtin_watch(struct slash *slash)
 		clock_gettime(CLOCK_MONOTONIC, &time_before);
 
 		/* Execute command */
-		slash_execute(slash, cmd_exec);
+		cmd_exit_code = slash_execute(slash, cmd_exec);
+		if(exit != 0xFFFFFF) {
+			if(exit == cmd_exit_code) {
+				break;
+			}
+		}
 
 		clock_gettime(CLOCK_MONOTONIC, &time_after);
 
