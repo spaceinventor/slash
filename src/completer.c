@@ -12,7 +12,7 @@
 #include "builtins.h"
 
 static void ls_appended(const char* tok, const char* app) {
-    char cmd[PATH_MAX + 3];
+    char cmd[PATH_MAX + 3] = {0};
 
     if ((tok != NULL && strlen(tok) + 1 > PATH_MAX) ||
         (app != NULL && strlen(app) + (tok != NULL ? strlen(tok) : 0) + 1 > PATH_MAX)) {
