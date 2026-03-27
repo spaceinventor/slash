@@ -189,6 +189,10 @@ struct slash {
 	 * for instance, typing: "w<TAB>g<TAB>s<TAB>" would result in the completed command line "watch get serial0" in 6 keystrokes
 	 */
 	bool complete_in_completion;
+
+	/* Statusline */
+	bool statusline_enabled;   /* scroll region is active for statusline */
+	int statusline_rows;       /* terminal rows when scroll region was last set */
 };
 
 /**
@@ -207,6 +211,7 @@ void slash_destroy(struct slash *slash);
 char *slash_readline(struct slash *slash);
 
 void slash_sigint(struct slash *slash, int signum);
+void slash_sigwinch(struct slash *slash);
 
 /**
  * @brief Implement this function to do something with the current line (logging, etc)
