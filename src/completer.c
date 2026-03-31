@@ -12,15 +12,17 @@
 #include "builtins.h"
 
 static void ls_appended(const char* tok, const char* app) {
-    char cmd[PATH_MAX + 3] = {0};
+    char cmd[PATH_MAX + 3];
 
-    if ((tok != NULL && strlen(tok) + 1 > PATH_MAX) ||
-        (app != NULL && strlen(app) + (tok != NULL ? strlen(tok) : 0) + 1 > PATH_MAX)) {
+    int written = snprintf(cmd, sizeof(cmd), "ls -p %s%s",
+                           tok ? tok : "",
+                           app ? app : "");
+
+    if (written < 0 || written >= (int)sizeof(cmd)) {
         printf("Path or argument too long\n");
         return;
     }
 
-    sprintf(cmd, "ls -p %s%s", (tok != NULL ? tok : ""), (app != NULL ? app : ""));
     int ret = system(cmd);
     (void)ret;
 }
