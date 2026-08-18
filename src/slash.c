@@ -146,28 +146,24 @@ static void slash_statusline_activate(struct slash *slash)
 {
 #ifdef SLASH_HAVE_TERMIOS_H
 	struct winsize ws;
-	if (ioctl(slash->fd_write, TIOCGWINSZ, &ws) == -1)
+	if (ioctl(0, TIOCGWINSZ, &ws) == -1)
 		return;
 
 	int rows = ws.ws_row;
-	char esc[32];
+	if(rows > 0) {
+		char esc[32];
+		slash_write(slash, "\0337", 2);  // DEC save cursor
+		//Set scroll region to all rows except the last.
+		//DECSTBM resets cursor to (1,1) per VT100 spec.	
+		snprintf(esc, sizeof(esc), "\033[1;%dr", rows - 1);
+		slash_write(slash, esc, strlen(esc));
 
-	//Set scroll region to all rows except the last.
-	//DECSTBM resets cursor to (1,1) per VT100 spec.
-	snprintf(esc, sizeof(esc), "\033[1;%dr", rows - 1);
-	slash_write(slash, esc, strlen(esc));
-
-	// Move cursor to bottom of scroll region (prompt row)
-	snprintf(esc, sizeof(esc), "\033[%d;1H", rows - 1);
-	slash_write(slash, esc, strlen(esc));
-
-	// Draw statusline on the reserved bottom row
-	slash_write(slash, "\0337", 2);  // DEC save cursor
-	snprintf(esc, sizeof(esc), "\033[%d;1H", rows);
-	slash_write(slash, esc, strlen(esc));
-	slash_statusline_render(slash);
-	slash_write(slash, "\0338", 2);  // DEC restore cursor
-
+		// Draw statusline on the reserved bottom row
+		snprintf(esc, sizeof(esc), "\033[%d;1H", rows);
+		slash_write(slash, esc, strlen(esc));
+		slash_statusline_render(slash);
+		slash_write(slash, "\0338", 2);  // DEC restore cursor
+	}
 	slash->statusline_enabled = true;
 	slash->statusline_rows = rows;
 #endif
@@ -892,8 +888,10 @@ int slash_refresh(struct slash *slash, int printtime)
 			return slash_refresh(slash, printtime);
 		}
 		struct winsize ws;
-		if (ioctl(slash->fd_write, TIOCGWINSZ, &ws) == 0 &&
-		    ws.ws_row != slash->statusline_rows) {
+		if (ioctl(0, TIOCGWINSZ, &ws) == -1) {
+			return -1;
+		}
+		if (ws.ws_row != slash->statusline_rows) {
 			slash_statusline_activate(slash);
 			return slash_refresh(slash, printtime);
 		}
@@ -1306,7 +1304,8 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
 	slash->complete_in_completion = true;
-
+	slash->statusline_enabled = true;
+	tcgetattr(slash->fd_read, &slash->original);
 	slash_list_init();
 
 	if (tcgetattr(slash->fd_read, &slash->original) < 0) {
@@ -1345,7 +1344,6 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
 
 	slash->complete_in_completion = true;
 	slash->statusline_enabled = false;
-
 	tcgetattr(slash->fd_read, &slash->original);
 }
 
