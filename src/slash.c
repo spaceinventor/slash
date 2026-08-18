@@ -145,12 +145,13 @@ static int slash_rawmode_disable(struct slash *slash)
 static void slash_statusline_activate(struct slash *slash)
 {
 #ifdef SLASH_HAVE_TERMIOS_H
+	slash->statusline_enabled = false;
 	struct winsize ws;
 	if (ioctl(0, TIOCGWINSZ, &ws) == -1)
 		return;
 
 	int rows = ws.ws_row;
-	if(rows > 0) {
+	if(rows > 1) {
 		char esc[32];
 		slash_write(slash, "\0337", 2);  // DEC save cursor
 		//Set scroll region to all rows except the last.
@@ -163,9 +164,9 @@ static void slash_statusline_activate(struct slash *slash)
 		slash_write(slash, esc, strlen(esc));
 		slash_statusline_render(slash);
 		slash_write(slash, "\0338", 2);  // DEC restore cursor
+		slash->statusline_enabled = true;
+		slash->statusline_rows = rows;
 	}
-	slash->statusline_enabled = true;
-	slash->statusline_rows = rows;
 #endif
 }
 
@@ -1304,7 +1305,7 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
 	slash->complete_in_completion = true;
-	slash->statusline_enabled = true;
+	slash->statusline_enabled = false;
 	tcgetattr(slash->fd_read, &slash->original);
 	slash_list_init();
 
