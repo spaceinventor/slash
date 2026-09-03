@@ -6,6 +6,7 @@ slash_sources = files([
 	'src/completer.c',
 	'src/optparse.c',
 	'src/slash_list.c',
+	'src/statusline.c',
 	])
 
 if get_option('builtins')

@@ -24,6 +24,7 @@
 #include <slash/slash.h>
 #include <slash/optparse.h>
 #include <slash/completer.h>
+#include <slash/statusline.h>
 
 #include <dlfcn.h>
 #include <stdio.h>
@@ -46,6 +47,10 @@
 
 #ifdef SLASH_HAVE_SELECT
 #include <sys/select.h>
+#endif
+
+#ifdef SLASH_HAVE_TERMIOS_H
+#include <sys/ioctl.h>
 #endif
 
 #include "builtins.h"
@@ -137,16 +142,74 @@ static int slash_rawmode_disable(struct slash *slash)
 	return 0;
 }
 
+static void slash_statusline_activate(struct slash *slash)
+{
+#ifdef SLASH_HAVE_TERMIOS_H
+	slash->statusline_enabled = false;
+	struct winsize ws;
+	if (ioctl(0, TIOCGWINSZ, &ws) == -1)
+		return;
+
+	int rows = ws.ws_row;
+	if(rows > 1) {
+		char esc[32];
+		slash_write(slash, "\0337", 2);  // DEC save cursor
+		//Set scroll region to all rows except the last.
+		//DECSTBM resets cursor to (1,1) per VT100 spec.	
+		snprintf(esc, sizeof(esc), "\033[1;%dr", rows - 1);
+		slash_write(slash, esc, strlen(esc));
+
+		// Draw statusline on the reserved bottom row
+		snprintf(esc, sizeof(esc), "\033[%d;1H", rows);
+		slash_write(slash, esc, strlen(esc));
+		slash_statusline_render(slash);
+		slash_write(slash, "\0338", 2);  // DEC restore cursor
+		slash->statusline_enabled = true;
+		slash->statusline_rows = rows;
+	}
+#endif
+}
+
+static void slash_statusline_deactivate(struct slash *slash)
+{
+#ifdef SLASH_HAVE_TERMIOS_H
+	if (!slash->statusline_enabled)
+		return;
+
+	char esc[32];
+
+	// Save cursor so we can restore after scroll region reset
+	slash_write(slash, "\0337", 2);
+
+	// Clear the statusline row
+	snprintf(esc, sizeof(esc), "\033[%d;1H\033[K", slash->statusline_rows);
+	slash_write(slash, esc, strlen(esc));
+
+	// Reset scroll region to full terminal (moves cursor to 1,1)
+	slash_write(slash, "\033[r", 3);
+
+	// Restore cursor to where it was
+	slash_write(slash, "\0338", 2);
+
+	slash->statusline_enabled = false;
+#endif
+}
+
 static int slash_configure_term(struct slash *slash)
 {
 	if (slash_rawmode_enable(slash) < 0)
 		return -ENOTTY;
+
+	if (slash_statusline_count() > 0)
+		slash_statusline_activate(slash);
 
 	return 0;
 }
 
 static int slash_restore_term(struct slash *slash)
 {
+	slash_statusline_deactivate(slash);
+
 	if (slash_rawmode_disable(slash) < 0)
 		return -ENOTTY;
 
@@ -154,14 +217,14 @@ static int slash_restore_term(struct slash *slash)
 }
 
 static int slash_wait_select(void *slashp, unsigned int ms);
-void slash_acquire_std_in_out(struct slash *slash) {	
+void slash_acquire_std_in_out(struct slash *slash) {
 	slash_configure_term(slash);
 #ifdef SLASH_HAVE_SELECT
 	slash->waitfunc = slash_wait_select;
 #endif
 }
 
-void slash_release_std_in_out(struct slash *slash) {	
+void slash_release_std_in_out(struct slash *slash) {
 	slash_restore_term(slash);
 #ifdef SLASH_HAVE_SELECT
 	slash->waitfunc = NULL;
@@ -175,7 +238,11 @@ int slash_write(struct slash *slash, const char *buf, size_t count)
 
 static int slash_read(struct slash *slash, void *buf, size_t count)
 {
-	return read(slash->fd_read, buf, count);
+	int ret;
+	do {
+		ret = read(slash->fd_read, buf, count);
+	} while (ret < 0 && errno == EINTR);
+	return ret;
 }
 
 int slash_putchar(struct slash *slash, char c)
@@ -813,6 +880,31 @@ int slash_refresh(struct slash *slash, int printtime)
 	if (slash_write(slash, esc, strlen(esc)) < 0)
 		return -1;
 
+	/* Update statusline on the fixed bottom row */
+#ifdef SLASH_HAVE_TERMIOS_H
+	if (slash_statusline_count() > 0) {
+		if (!slash->statusline_enabled) {
+			slash_statusline_activate(slash);
+			/* Activation moved cursor; re-run refresh at new position */
+			return slash_refresh(slash, printtime);
+		}
+		struct winsize ws;
+		if (ioctl(0, TIOCGWINSZ, &ws) == -1) {
+			return -1;
+		}
+		if (ws.ws_row != slash->statusline_rows) {
+			slash_statusline_activate(slash);
+			return slash_refresh(slash, printtime);
+		}
+		char pos[16];
+		slash_write(slash, "\0337", 2);  /* DEC save cursor */
+		snprintf(pos, sizeof(pos), "\033[%d;1H", slash->statusline_rows);
+		slash_write(slash, pos, strlen(pos));
+		slash_statusline_render(slash);
+		slash_write(slash, "\0338", 2);  /* DEC restore cursor */
+	}
+#endif
+
 	return 0;
 }
 
@@ -918,15 +1010,22 @@ static void slash_swap(struct slash *slash)
 void slash_clear_screen(struct slash *slash) {
 	const char *esc = ESCAPE("H") ESCAPE("2J");
 	slash_write(slash, esc, strlen(esc));
+	/* Force statusline scroll region re-setup on next refresh */
+	slash->statusline_enabled = false;
 }
 
 void slash_sigint(struct slash *slash, int signum) {
 	if (slash->busy) {
 		slash->signal = signum;
 	} else {
-		slash_reset(slash);	
+		slash_reset(slash);
 		slash_refresh(slash, 0);
 	}
+}
+
+void slash_sigwinch(struct slash *slash) {
+	slash->statusline_enabled = false;  /* force scroll region re-setup */
+	slash_refresh(slash, 0);
 }
 
 #include <stdlib.h>
@@ -1153,6 +1252,11 @@ int slash_loop(struct slash *slash)
 		if (!slash_line_empty(line, strlen(line))) {
 			/* Run command */
 			ret = slash_execute(slash, line);
+			#ifdef SLASH_HAVE_TERMIOS_H
+			if(ret != SLASH_SUCCESS) {
+				slash_statusline_set("slash", {.type = SLASH_STATUS_ERROR},"FAILED: %s", line);
+			}
+			#endif
 			if (ret == SLASH_EXIT)
 				break;
 		}
@@ -1201,7 +1305,8 @@ struct slash *slash_create(size_t line_size, size_t history_size)
 	slash->history_cursor = slash->history;
 	slash->history_avail = slash->history_size - 1;
 	slash->complete_in_completion = true;
-
+	slash->statusline_enabled = false;
+	tcgetattr(slash->fd_read, &slash->original);
 	slash_list_init();
 
 	if (tcgetattr(slash->fd_read, &slash->original) < 0) {
@@ -1239,7 +1344,7 @@ void slash_create_static(struct slash *slash, char * line_buf, size_t line_size,
     slash->cmd_list = 0;
 
 	slash->complete_in_completion = true;
-
+	slash->statusline_enabled = false;
 	tcgetattr(slash->fd_read, &slash->original);
 }
 
