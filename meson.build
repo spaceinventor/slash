@@ -8,13 +8,6 @@ slash_sources = files([
 	'src/slash_list.c',
 	])
 
-if get_option('builtins')
-	slash_sources += files([
-		'src/builtins.c',
-		'src/run.c',
-	])
-endif
-
 conf = configuration_data()
 if meson.get_compiler('c').has_header('sys/termios.h')
 	conf.set('SLASH_HAVE_TERMIOS_H', true)
@@ -33,6 +26,12 @@ slash_config_h = configure_file(output: 'slash_config.h', configuration: conf)
 slash_inc = include_directories('.', 'include')
 
 dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], default_options: ['default_library=static'], required: false)
+
+slash_builtins_dep = declare_dependency(
+	sources: files('src/builtins.c', 'src/run.c'),
+	include_directories: slash_inc,
+	dependencies: dependencies,
+)
 	
 slash_lib = library('slash',
 	sources: [slash_sources, slash_config_h],
