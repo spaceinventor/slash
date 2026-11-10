@@ -460,6 +460,43 @@ static void strip_comment(char *line) {
 	}
 }
 
+static char *expand_tilde_in_args(char *arg, int args_start_at) {
+	size_t length = strlen(arg);
+	char *HOME = getenv("HOME");
+	if(NULL == HOME) {
+		/* $HOME not set, return early */
+		return arg;
+	}
+	size_t home_length = strlen(HOME);
+	bool quote[3] = { false, false, false };
+	uint8_t nof_tildes = 0;
+	for(size_t i = args_start_at; i < length; i++) {
+		if(!in_quote(arg[i], quote)) {
+			if(arg[i] == '~') {
+				nof_tildes++;
+			}
+		}
+	}
+	char *res = arg;
+	if(nof_tildes) {
+		res = calloc(1, length + home_length * nof_tildes + 1);
+		if(res) {
+			size_t res_idx = 0;
+			for(size_t i = 0; i < length; i++) {
+				res[res_idx] = arg[i];
+				if(!in_quote(arg[i], quote) && arg[i] == '~') {
+					res[res_idx] = '\0';
+					strcat(res, HOME);
+					res_idx += home_length;
+				} else {
+					res_idx++;
+				}
+			}
+		}
+	}
+	return res;
+}
+
 int slash_execute(struct slash *slash, char *org_line)
 {
 	char *line = org_line;
@@ -505,6 +542,10 @@ int slash_execute(struct slash *slash, char *org_line)
 	/* Implement this function to perform logging for example */
 	slash_on_execute_hook(line);
 
+	int args_start_at = args - line_to_use;
+
+	line_to_use = expand_tilde_in_args(line_to_use, args_start_at);
+	args = line_to_use + args_start_at;
 	if (!command->func) {
 		/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
 		free(processed_cmd_line);
@@ -542,6 +583,9 @@ int slash_execute(struct slash *slash, char *org_line)
 
 	slash_on_execute_post_hook(line, command);
 
+	if(line_to_use != processed_cmd_line) {
+		free(line_to_use);
+	}
 	/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
 	free(processed_cmd_line);
 
