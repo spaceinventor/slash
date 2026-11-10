@@ -9,8 +9,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v1
-      - uses: BSFishy/meson-build@v1.0.3
-        with:
-          action: build
-          directory: build
+      - uses: actions/setup-python@v5
+      - name: Install dependencies
+        run: python -m pip install meson==1.9.2 ninja
+      - name: Configure Project
+        run: meson setup builddir -Ddefault_library=static
+      - name: Build
+        run: ninja -C builddir
