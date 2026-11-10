@@ -43,7 +43,7 @@ slash_builtins_lib = library('slash_builtins',
 
 slash_builtins_dep = declare_dependency(
 	include_directories : slash_inc,
-	link_with : slash_builtins_lib,
+	link_whole : slash_builtins_lib,
 )
 
 slash_dep = declare_dependency(
