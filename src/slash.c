@@ -63,7 +63,7 @@ int slash_getopt(struct slash *slash, const char *opts)
 {
 	/* From "public domain AT&T getopt source" newsgroup posting */
 	int c;
-	char *cp;
+	const char *cp;
 
 	if (slash->sp == 1) {
 		if (slash->optind >= slash->argc ||

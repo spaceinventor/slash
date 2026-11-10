@@ -1,4 +1,4 @@
-project('slash', 'c', default_options: ['warning_level=3', 'werror=true'])
+project('slash', 'c', version: '0.0.1', default_options: ['warning_level=3', 'werror=true'])
 add_project_arguments(['-Wstrict-prototypes', '-Wmissing-prototypes', '-Wmissing-declarations', '-Wcast-align', '-Wpointer-arith', '-Wshadow'], language: 'c')
 
 slash_sources = files([
@@ -7,13 +7,6 @@ slash_sources = files([
 	'src/optparse.c',
 	'src/slash_list.c',
 	])
-
-if get_option('builtins')
-	slash_sources += files([
-		'src/builtins.c',
-		'src/run.c',
-	])
-endif
 
 conf = configuration_data()
 if meson.get_compiler('c').has_header('sys/termios.h')
@@ -33,12 +26,24 @@ slash_config_h = configure_file(output: 'slash_config.h', configuration: conf)
 slash_inc = include_directories('.', 'include')
 
 dependencies = dependency('libc', fallback: ['picolibc', 'picolibc_dep'], default_options: ['default_library=static'], required: false)
-	
+
 slash_lib = library('slash',
 	sources: [slash_sources, slash_config_h],
 	include_directories : slash_inc,
 	dependencies : dependencies,
 	install : false,
+)
+
+slash_builtins_lib = library('slash_builtins',
+	sources: files('src/builtins.c', 'src/run.c'),
+	include_directories : slash_inc,
+	dependencies : dependencies,
+	install : false,
+)
+
+slash_builtins_dep = declare_dependency(
+	include_directories : slash_inc,
+	link_with : slash_builtins_lib,
 )
 
 slash_dep = declare_dependency(
