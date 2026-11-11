@@ -546,6 +546,7 @@ int slash_execute(struct slash *slash, char *org_line)
 	free(processed_cmd_line);
 
 	slash->busy = 0;
+	slash->last_result = ret;
 
 	return ret;
 }

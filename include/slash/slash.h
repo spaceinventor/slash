@@ -147,6 +147,7 @@ struct slash {
 	bool use_activate;
 	int signal;
 	int busy;
+	int last_result;
 
 	/* Line editing */
 	size_t line_size;
