@@ -27,21 +27,25 @@ static int slash_builtin_help(struct slash *slash)
 		while ((cmd = slash_list_iterate(&iter)) != NULL) {
 			slash_command_description(slash, cmd);
 		}
-		return SLASH_SUCCESS;
+		slash->last_result = SLASH_SUCCESS;
+		return slash->last_result;
 	}
 
 	find[0] = '\0';
 
 	for (i = 1; i < slash->argc; i++) {
-		if (strlen(slash->argv[i]) >= (size_t) available)
-			return SLASH_ENOSPC;
+		if (strlen(slash->argv[i]) >= (size_t) available) {
+			slash->last_result = SLASH_ENOSPC;
+			return slash->last_result;
+		}
 		strcat(find, slash->argv[i]);
 		strcat(find, " ");
 	}
 	command = slash_command_find(slash, find, strlen(find), &args);
 	if (!command) {
 		slash_printf(slash, "No such command: %s\n", find);
-		return SLASH_EINVAL;
+		slash->last_result = SLASH_EINVAL;
+		return slash->last_result;
 	}
 
 	slash_command_usage(slash, command);

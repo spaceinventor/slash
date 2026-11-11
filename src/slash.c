@@ -469,7 +469,7 @@ int slash_execute(struct slash *slash, char *org_line)
 	struct slash_command *command;
 	char *args, *argv[SLASH_ARG_MAX];
 	char *processed_cmd_line = NULL, *line_to_use;
-	int ret, argc = 0;
+	int argc = 0;
 
 	slash->busy = 1;
 	slash->signal = 0;
@@ -499,7 +499,8 @@ int slash_execute(struct slash *slash, char *org_line)
 		slash_printf(slash, "No such command: %s\n", line);
 		/* Yes, processed_cmd_line maybe NULL, but the man page says it's ok, so we save an "if" statement */
 		free(processed_cmd_line);
-		return -ENOENT;
+		slash->last_result = SLASH_ENOENT;
+		return slash->last_result;
 	}
 
 	/* Implement this function to perform logging for example */
@@ -508,7 +509,8 @@ int slash_execute(struct slash *slash, char *org_line)
 	if (!command->func) {
 		/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
 		free(processed_cmd_line);
-		return -EINVAL;
+		slash->last_result = SLASH_EINVAL;
+		return slash->last_result;
 	}
 
 	/* Build args */
@@ -516,7 +518,8 @@ int slash_execute(struct slash *slash, char *org_line)
 		slash_printf(slash, "Mismatched quotes\n");
 		/* Yes, processed_cmd_line maybe NULL, but the free() man page says it's ok, so we save an "if" statement */
 		free(processed_cmd_line);
-		return -EINVAL;
+		slash->last_result = SLASH_EINVAL;
+		return slash->last_result;
 	}
 
 	/* Reset state for slash_getopt */
@@ -531,13 +534,13 @@ int slash_execute(struct slash *slash, char *org_line)
 	if (command->context) {
 		/* If the user has attached context to the command,
 			we assume they also specified a function which can accept it. */
-		ret = command->func_ctx(slash, command->context);
+		slash->last_result = command->func_ctx(slash, command->context);
 	} else {
 		/* Otherwise call the traditional (`slash_command()` macro) function without context. */
-		ret = command->func(slash);
+		slash->last_result = command->func(slash);
 	}
 
-	if (ret == SLASH_EUSAGE)
+	if (slash->last_result == SLASH_EUSAGE)
 		slash_command_usage(slash, command);
 
 	slash_on_execute_post_hook(line, command);
@@ -546,9 +549,8 @@ int slash_execute(struct slash *slash, char *org_line)
 	free(processed_cmd_line);
 
 	slash->busy = 0;
-	slash->last_result = ret;
 
-	return ret;
+	return slash->last_result;
 }
 
 /* History */
