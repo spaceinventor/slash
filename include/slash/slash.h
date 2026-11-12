@@ -56,7 +56,7 @@
 		.help = _help, \
         .next = {NULL},  /* Next pointer in case the user wants to implement custom ordering within or across APMs.
 							It should not required by the default implementation. */\
-	};
+	}
 
 #define slash_command(_name, _func, _args, _help)			\
 	__slash_command(slash_cmd_ ## _name,				\
