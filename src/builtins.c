@@ -130,11 +130,7 @@ static int slash_builtin_watch(struct slash *slash)
 	/* Build command string */
 
 	char line[slash->line_size];
-	line[0] = '\0';
-	for (int arg = argi + 1; arg < slash->argc; arg++) {
-		strncat(line, slash->argv[arg], slash->line_size - strlen(line));
-		strncat(line, " ", slash->line_size - strlen(line));
-	}
+	strcpy(line, slash->buffer + sizeof("watch"));
 
 	printf("Executing \"%s\" each %u ms - press <enter> to stop\n", line, interval);
 
