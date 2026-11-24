@@ -132,7 +132,7 @@ static int slash_builtin_watch(struct slash *slash)
 	char line[slash->line_size];
 	line[0] = '\0';
 	for (int arg = argi + 1; arg < slash->argc; arg++) {
-		/* Naive way of figuring if args need quoting, shoulb be good enough*/
+		/* Naive way of figuring if args need quoting, should be good enough*/
 		char *space = strchr(slash->argv[arg], ' ');
 		bool need_quote = space && space != slash->argv[arg]?true:false;
 		if (need_quote) {
